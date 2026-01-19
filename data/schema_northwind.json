@@ -1,0 +1,168 @@
+[
+  {
+    "table_name": "categories",
+    "table_description": "产品类别信息表",
+    "columns": [
+      { "col": "CategoryID", "type": "int", "description": "类别唯一标识符" },
+      { "col": "CategoryName", "type": "varchar", "description": "类别名称" },
+      { "col": "Description", "type": "longtext", "description": "类别描述" },
+      { "col": "Picture", "type": "longblob", "description": "类别图片（二进制数据）" }
+    ]
+  },
+  {
+    "table_name": "customercustomerdemo",
+    "table_description": "客户与客户类型关联表（多对多）",
+    "columns": [
+      { "col": "CustomerID", "type": "char", "description": "客户ID（关联 customers 表）" },
+      { "col": "CustomerTypeID", "type": "char", "description": "客户类型ID（关联 customerdemographics 表）" }
+    ]
+  },
+  {
+    "table_name": "customerdemographics",
+    "table_description": "客户类型定义表",
+    "columns": [
+      { "col": "CustomerTypeID", "type": "char", "description": "客户类型唯一标识符" },
+      { "col": "CustomerDesc", "type": "longtext", "description": "客户类型描述" }
+    ]
+  },
+  {
+    "table_name": "customers",
+    "table_description": "客户主数据表",
+    "columns": [
+      { "col": "CustomerID", "type": "char", "description": "客户唯一标识符（5字符代码）" },
+      { "col": "CompanyName", "type": "varchar", "description": "公司名称" },
+      { "col": "ContactName", "type": "varchar", "description": "联系人姓名" },
+      { "col": "ContactTitle", "type": "varchar", "description": "联系人职位" },
+      { "col": "Address", "type": "varchar", "description": "地址" },
+      { "col": "City", "type": "varchar", "description": "城市" },
+      { "col": "Region", "type": "varchar", "description": "地区/州" },
+      { "col": "PostalCode", "type": "varchar", "description": "邮政编码" },
+      { "col": "Country", "type": "varchar", "description": "国家" },
+      { "col": "Phone", "type": "varchar", "description": "电话号码" },
+      { "col": "Fax", "type": "varchar", "description": "传真号码" }
+    ]
+  },
+  {
+    "table_name": "employees",
+    "table_description": "员工信息表",
+    "columns": [
+      { "col": "EmployeeID", "type": "int", "description": "员工唯一标识符" },
+      { "col": "LastName", "type": "varchar", "description": "姓氏" },
+      { "col": "FirstName", "type": "varchar", "description": "名字" },
+      { "col": "Title", "type": "varchar", "description": "职务" },
+      { "col": "TitleOfCourtesy", "type": "varchar", "description": "尊称（如 Mr., Ms.）" },
+      { "col": "BirthDate", "type": "timestamp", "description": "出生日期" },
+      { "col": "HireDate", "type": "timestamp", "description": "雇佣日期" },
+      { "col": "Address", "type": "varchar", "description": "住址" },
+      { "col": "City", "type": "varchar", "description": "城市" },
+      { "col": "Region", "type": "varchar", "description": "地区/州" },
+      { "col": "PostalCode", "type": "varchar", "description": "邮政编码" },
+      { "col": "Country", "type": "varchar", "description": "国家" },
+      { "col": "HomePhone", "type": "varchar", "description": "家庭电话" },
+      { "col": "Extension", "type": "varchar", "description": "分机号" },
+      { "col": "Photo", "type": "longblob", "description": "员工照片（二进制数据）" },
+      { "col": "Notes", "type": "longtext", "description": "备注（通常包含履历等文本）" },
+      { "col": "ReportsTo", "type": "int", "description": "上级主管的 EmployeeID（自引用）" },
+      { "col": "PhotoPath", "type": "varchar", "description": "照片文件路径（URL 或本地路径）" }
+    ]
+  },
+  {
+    "table_name": "employeeterritories",
+    "table_description": "员工与销售区域关联表（多对多）",
+    "columns": [
+      { "col": "EmployeeID", "type": "int", "description": "员工ID（关联 employees 表）" },
+      { "col": "TerritoryID", "type": "varchar", "description": "销售区域ID（关联 territories 表）" }
+    ]
+  },
+  {
+    "table_name": "orderdetails",
+    "table_description": "订单明细表（每条记录对应一个订单中的一种商品）",
+    "columns": [
+      { "col": "OrderID", "type": "int", "description": "订单ID（关联 orders 表）" },
+      { "col": "ProductID", "type": "int", "description": "产品ID（关联 products 表）" },
+      { "col": "UnitPrice", "type": "decimal", "description": "下单时的单价（避免后续价格变动影响历史订单）" },
+      { "col": "Quantity", "type": "smallint", "description": "订购数量" },
+      { "col": "Discount", "type": "float", "description": "折扣率（0.0 到 1.0，例如 0.15 表示 15% 折扣）" }
+    ]
+  },
+  {
+    "table_name": "orders",
+    "table_description": "订单主表",
+    "columns": [
+      { "col": "OrderID", "type": "int", "description": "订单唯一标识符" },
+      { "col": "CustomerID", "type": "char", "description": "客户ID（关联 customers 表）" },
+      { "col": "EmployeeID", "type": "int", "description": "处理该订单的员工ID（关联 employees 表）" },
+      { "col": "OrderDate", "type": "timestamp", "description": "订单创建日期" },
+      { "col": "RequiredDate", "type": "timestamp", "description": "要求发货日期" },
+      { "col": "ShippedDate", "type": "timestamp", "description": "实际发货日期" },
+      { "col": "ShipVia", "type": "int", "description": "承运商ID（关联 shippers 表）" },
+      { "col": "Freight", "type": "decimal", "description": "运费" },
+      { "col": "ShipName", "type": "varchar", "description": "收货人名称" },
+      { "col": "ShipAddress", "type": "varchar", "description": "收货地址" },
+      { "col": "ShipCity", "type": "varchar", "description": "收货城市" },
+      { "col": "ShipRegion", "type": "varchar", "description": "收货地区/州" },
+      { "col": "ShipPostalCode", "type": "varchar", "description": "收货邮政编码" },
+      { "col": "ShipCountry", "type": "varchar", "description": "收货国家" }
+    ]
+  },
+  {
+    "table_name": "products",
+    "table_description": "产品主数据表",
+    "columns": [
+      { "col": "ProductID", "type": "int", "description": "产品唯一标识符" },
+      { "col": "ProductName", "type": "varchar", "description": "产品名称" },
+      { "col": "SupplierID", "type": "int", "description": "供应商ID（关联 suppliers 表）" },
+      { "col": "CategoryID", "type": "int", "description": "类别ID（关联 categories 表）" },
+      { "col": "QuantityPerUnit", "type": "varchar", "description": "每单位数量（如 '12 boxes', '24 bottles'）" },
+      { "col": "Price", "type": "decimal", "description": "产品单价" },
+      { "col": "UnitsInStock", "type": "smallint", "description": "库存数量" },
+      { "col": "UnitsOnOrder", "type": "smallint", "description": "已订购但未到货的数量" },
+      { "col": "ReorderLevel", "type": "smallint", "description": "再订购点（低于此值需补货）" },
+      { "col": "Discontinued", "type": "tinyint", "description": "是否已停产（1=是，0=否）" }
+    ]
+  },
+  {
+    "table_name": "region",
+    "table_description": "大区定义表（用于地理层级：Region > Territory）",
+    "columns": [
+      { "col": "RegionID", "type": "int", "description": "大区唯一标识符" },
+      { "col": "RegionDescription", "type": "char", "description": "大区描述（如 'Eastern', 'Western'）" }
+    ]
+  },
+  {
+    "table_name": "shippers",
+    "table_description": "承运商（货运公司）信息表",
+    "columns": [
+      { "col": "ShipperID", "type": "int", "description": "承运商唯一标识符" },
+      { "col": "CompanyName", "type": "varchar", "description": "承运商公司名称" },
+      { "col": "Phone", "type": "varchar", "description": "联系电话" }
+    ]
+  },
+  {
+    "table_name": "suppliers",
+    "table_description": "供应商信息表",
+    "columns": [
+      { "col": "SupplierID", "type": "int", "description": "供应商唯一标识符" },
+      { "col": "CompanyName", "type": "varchar", "description": "公司名称" },
+      { "col": "ContactName", "type": "varchar", "description": "联系人姓名" },
+      { "col": "ContactTitle", "type": "varchar", "description": "联系人职位" },
+      { "col": "Address", "type": "varchar", "description": "地址" },
+      { "col": "City", "type": "varchar", "description": "城市" },
+      { "col": "Region", "type": "varchar", "description": "地区/州" },
+      { "col": "PostalCode", "type": "varchar", "description": "邮政编码" },
+      { "col": "Country", "type": "varchar", "description": "国家" },
+      { "col": "Phone", "type": "varchar", "description": "电话号码" },
+      { "col": "Fax", "type": "varchar", "description": "传真号码" },
+      { "col": "HomePage", "type": "longtext", "description": "公司主页或简介（可能包含HTML）" }
+    ]
+  },
+  {
+    "table_name": "territories",
+    "table_description": "销售区域定义表（隶属于大区）",
+    "columns": [
+      { "col": "TerritoryID", "type": "varchar", "description": "销售区域唯一标识符（通常为邮政编码或区域代码）" },
+      { "col": "TerritoryDescription", "type": "char", "description": "销售区域描述（如 'Boston', 'New York'）" },
+      { "col": "RegionID", "type": "int", "description": "所属大区ID（关联 region 表）" }
+    ]
+  }
+]

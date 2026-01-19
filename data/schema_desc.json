@@ -1,0 +1,90 @@
+[
+  {
+    "table_name": "sales_orders",
+    "description": "存储超市所有的销售订单明细记录，每一行代表一个订单中的一种产品。",
+    "columns": [
+      {
+        "name": "row_id",
+        "description": "行ID，主键"
+      },
+      {
+        "name": "order_id",
+        "description": "订单编号，例如 CA-2016-152156"
+      },
+      {
+        "name": "order_date",
+        "description": "订单日期，格式 YYYY-MM-DD，用于时间趋势分析"
+      },
+      {
+        "name": "ship_date",
+        "description": "发货日期，格式 YYYY-MM-DD"
+      },
+      {
+        "name": "ship_mode",
+        "description": "发货模式，如 Second Class, Standard Class"
+      },
+      {
+        "name": "customer_id",
+        "description": "客户ID"
+      },
+      {
+        "name": "customer_name",
+        "description": "客户姓名"
+      },
+      {
+        "name": "segment",
+        "description": "客户细分群体，如 Consumer(消费者), Corporate(公司), Home Office(家庭办公)"
+      },
+      {
+        "name": "country",
+        "description": "国家，通常为 United States"
+      },
+      {
+        "name": "city",
+        "description": "城市名称，如 Los Angeles, Henderson"
+      },
+      {
+        "name": "state",
+        "description": "州/省份名称，如 California, Kentucky"
+      },
+      {
+        "name": "region",
+        "description": "所属大区：South, West, Central, East"
+      },
+      {
+        "name": "product_id",
+        "description": "产品ID"
+      },
+      {
+        "name": "category",
+        "description": "产品大类：Furniture(家具), Office Supplies(办公用品), Technology(科技)"
+      },
+      {
+        "name": "sub_category",
+        "description": "产品子类，如 Bookcases, Chairs, Labels, Phones"
+      },
+      {
+        "name": "product_name",
+        "description": "具体产品名称"
+      },
+      {
+        "name": "sales",
+        "description": "销售额/营收，数值类型",
+        "formula": "求和使用 SUM(sales)"
+      },
+      {
+        "name": "quantity",
+        "description": "销售数量"
+      },
+      {
+        "name": "discount",
+        "description": "折扣比例，0.2 代表 20% 折扣"
+      },
+      {
+        "name": "profit",
+        "description": "利润，数值类型",
+        "formula": "利润率 = SUM(profit) / SUM(sales)"
+      }
+    ]
+  }
+]

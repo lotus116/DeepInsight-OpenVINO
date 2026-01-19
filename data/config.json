@@ -1,0 +1,38 @@
+{
+    "api_key": "",
+    "api_base": "http://aidemo.intel.cn/v1",
+    "model_name": "DeepSeek-V3.1",
+    "db_type": "MySQL",
+    "db_path": "mysql+pymysql://root:123456@localhost:3306/northwind",
+    "db_uris": [
+        "mysql+pymysql://root:123456@localhost:3306/northwind"
+    ],
+    "schema_path": "data/schema_northwind.json",
+    "kb_paths_list": [
+        "data/schema_northwind.json"
+    ],
+    "model_path": "models/bge-small-ov",
+    "max_retries": 5,
+    "max_candidates": 4,
+    "log_file": "data/agent.log",
+    "enable_ai_recommendations": true,
+    "recommendation_use_separate_api": false,
+    "recommendation_api_base": "http://aidemo.intel.cn/v1",
+    "recommendation_api_key": "",
+    "recommendation_model_name": "DeepSeek-V3.1",
+    "enable_history_context": true,
+    "max_context_items": 3,
+    "sqlite_config": {
+        "db_path": "data/ecommerce.db",
+        "schema_path": "data/schema_desc.json"
+    },
+    "mysql_config": {
+        "host": "localhost",
+        "port": "3306",
+        "user": "root",
+        "password": "123456",
+        "database": "northwind",
+        "schema_path": "data/schema_northwind.json"
+    },
+    "allow_empty_results": true
+}
