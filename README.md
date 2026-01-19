@@ -1,4 +1,4 @@
-# 🚀 Intel® DeepInsight 智能零售决策系统
+# 🚀 DeepInsight 智能决策系统 (Powered by Intel® OpenVINO™)
 
 > **基于 Intel OpenVINO™ 与 DeepSeek R1 的全本地化、隐私优先的自然语言数据分析平台**  
 > 适用于中小企业、分支机构及对数据合规有严苛要求的行业场景（如金融、制造、政务）
@@ -335,6 +335,7 @@ OpenVINO优化: 3.79ms
 ## 👥 协作者
 
 - **项目负责人 & 核心开发**：唐佳云、严秋实
+
 
 
 
