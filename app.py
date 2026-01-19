@@ -1319,8 +1319,7 @@ with st.sidebar:
             st.markdown('</div>', unsafe_allow_html=True)
             
             # 高级设置
-            st.markdown("---")  # 加个分割线更好看
-            if st.checkbox("⚡ 显示高级设置", value=False):  # 用 Checkbox 替代 Expander
+            with st.expander("⚡ 高级设置", expanded=False):
                 # 自动清理选项
                 auto_clean = st.checkbox(
                     "自动清理过期记忆",
