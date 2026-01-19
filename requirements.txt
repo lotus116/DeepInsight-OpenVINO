@@ -21,3 +21,5 @@ python-docx
 pymupdf
 mkl
 mkl-service
+pymysql
+sqlalchemy
