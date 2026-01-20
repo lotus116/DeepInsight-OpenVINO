@@ -1,13 +1,11 @@
-# 🚀 DeepInsight 智能决策系统 (Powered by Intel® OpenVINO™)
+# 🚀 Intel® DeepInsight 智能零售决策系统
 
 > **基于 Intel OpenVINO™ 与 DeepSeek R1 的全本地化、隐私优先的自然语言数据分析平台**  
 > 适用于中小企业、分支机构及对数据合规有严苛要求的行业场景（如金融、制造、政务）
 
 ## 📋 项目简介
 
-Intel® DeepInsight 是一个企业级智能数据分析平台，通过自然语言查询实现复杂的数据分析和可视化。系统采用先进的 Text-to-SQL 技术，结合 RAG（检索增强生成）和智能硬件优化，为用户提供直观的数据洞察体验。
-
- [**【演示视频】**](https://www.bilibili.com/video/BV1GYraBLET9/?spm_id_from=333.1387.homepage.video_card.click&vd_source=af32fbc38e2e1fd69040dfbf0a190747)
+Intel® DeepInsight 是一个企业级智能数据分析平台，通过自然语言查询实现复杂的数据分析和可视化。系统采用前沿的 Text-to-SQL 技术，结合 RAG（检索增强生成）和智能硬件优化，为用户提供直观的数据洞察体验。
 
 ### ✨ 核心特性
 
@@ -19,13 +17,14 @@ Intel® DeepInsight 是一个企业级智能数据分析平台，通过自然语
 - 📄 **完整导出** - 支持 PDF/Word 报告生成和会话分享
 - 🧠 **上下文记忆** - 智能对话历史管理和上下文理解
 - 📚 **业务配置** - 支持行业术语词典和业务上下文配置
+- 📱 **全平台响应式** - 完美支持桌面、平板、手机多端访问
+  - 🎯 自适应布局 (360px - 1920px+ 全屏幕尺寸支持)
+  - 👆 触摸优化 (44px 最小触摸目标，符合人体工程学)
+  - 🔄 横竖屏自动适配
+  - 📲 iOS/Android 原生体验优化
+  - 🌙 暗色模式支持 (自动跟随系统设置)
 
-### 🤖 AI 辅助声明 (AI-Assisted Development Declaration)
 
-**本项目在开发过程中使用了大语言模型（LLM）作为辅助工具。**   
-- 代码生成：部分基础功能模块、前端 UI 布局及单元测试代码由 AI 辅助生成，并经过人工审核与调试。  
-- 架构设计：系统的核心架构、业务逻辑设计、Prompt 工程及硬件优化方案（OpenVINO 集成）均由开发者独立设计。  
-- 工具使用：使用了 Kiro+Copilot / DeepSeek / Gemeni 进行代码补全和重构建议。  
 
 ## 🛠️ 运行条件
 
@@ -49,11 +48,23 @@ Intel® DeepInsight 是一个企业级智能数据分析平台，通过自然语
 
 - **Python包管理器**: pip 或 conda
 - **数据库** (可选): MySQL 5.7+ 或 PostgreSQL 12+
-- **浏览器**: Chrome, Firefox, Safari, Edge (支持现代Web标准)
+- **浏览器**: 
+  - 桌面端: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+  - 移动端: iOS Safari 14+, Chrome Mobile 90+, Samsung Internet 14+
+  - 支持现代Web标准 (ES6+, CSS Grid, Flexbox)
 
 ## 🚀 运行说明
 
-### 1. 环境准备
+### 1. 获取项目代码
+
+请将本项目压缩包下载到本地，解压后进入项目的根目录：
+
+```bash
+# 进入解压后的项目文件夹
+cd path/to/project-folder
+```
+
+### 2. 环境准备
 
 ```bash
 # 创建虚拟环境 (推荐)
@@ -66,7 +77,7 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 2. 安装依赖
+### 3. 安装依赖
 
 ```bash
 # 安装Python依赖
@@ -74,26 +85,41 @@ pip install -r requirements.txt
 
 ```
 
+### 4.创建northwind数据库
+运行以下命令初始化演示数据库（仅需执行一次）：
+```bash
+python setup_northwind.py --user root --password 1234567 --db northwind --sql "data/northwind.sql"
+```
+参数说明：
 
-### 3. 启动应用
+- --user: 您的数据库用户名（示例中为 root，请根据实际情况修改）
+
+- --password: 您的数据库密码（示例中为 1234567，请替换为您本地的真实密码）
+
+
+### 5. 启动应用
 
 ```bash
 # 启动Streamlit应用
 streamlit run app.py
 ```
 
-### 4. 访问应用
+### 6. 访问应用
 
 打开浏览器访问：
 - 本地访问: `http://localhost:8501`
 - 外部访问: `http://your-ip:8501`
 
-### 5. 配置系统
+### 7. 配置系统
+
+
 
 在Web界面的侧边栏中配置：
 - **API Base URL**: 大语言模型服务地址
 - **API Key**: 对应的API密钥
 - **Model Name**: 使用的模型名称 (如 DeepSeek-V3.1)
+
+更改完配置后记得点击“保存配置”即可生效
 
 ## 📁 目录结构
 
@@ -337,9 +363,3 @@ OpenVINO优化: 3.79ms
 ## 👥 协作者
 
 - **项目负责人 & 核心开发**：唐佳云、严秋实
-
-
-
-
-
-
