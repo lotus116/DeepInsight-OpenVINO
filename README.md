@@ -7,6 +7,8 @@
 
 Intel® DeepInsight 是一个企业级智能数据分析平台，通过自然语言查询实现复杂的数据分析和可视化。系统采用先进的 Text-to-SQL 技术，结合 RAG（检索增强生成）和智能硬件优化，为用户提供直观的数据洞察体验。
 
+ **【演示视频】**[B站视频](https://www.bilibili.com/video/BV1GYraBLET9/?spm_id_from=333.1387.homepage.video_card.click&vd_source=af32fbc38e2e1fd69040dfbf0a190747)
+
 ### ✨ 核心特性
 
 - 🧠 **智能查询理解** - 支持自然语言查询，自动生成精确SQL
@@ -335,6 +337,7 @@ OpenVINO优化: 3.79ms
 ## 👥 协作者
 
 - **项目负责人 & 核心开发**：唐佳云、严秋实
+
 
 
 
