@@ -31,7 +31,6 @@
 | 导出 | 支持 CSV、Word、PDF 等导出路径 |
 | 上下文能力 | 多轮对话与上下文记忆 |
 | 性能优化 | OpenVINO 推理加速、查询缓存、硬件遥测 |
-| 评测体系 | G1/G2/G3 对比、Token 统计、响应时间、P95 报告 |
 
 ---
 
@@ -71,29 +70,6 @@ streamlit run app.py
 
 ---
 
-## 评测命令
-
-### AdventureWorks 准确率评测
-
-```bash
-python -m eval_suite.run_all --database adventureworks
-```
-
-### 单轮评测
-
-```bash
-python -m eval_suite.run_all --database adventureworks --runs 1
-```
-
-### 仅性能评测（10 轮平均）
-
-```bash
-python -m eval_suite.run_all --performance-only --runs 10
-```
-
-输出目录：`eval_suite/results/`
-
----
 
 ## 系统要求
 
@@ -115,14 +91,13 @@ DeepInsight-refine/
 ├── agent_core.py
 ├── rag_engine.py
 ├── visualization_engine.py
-├── eval_suite/
 ├── hardware/
 ├── context_memory/
 ├── ui/
 ├── tools/
 ├── data/
 ├── docs/
-└── 论文撰写/
+
 ```
 
 更完整的结构说明见 `docs/ARCHITECTURE.md`。
@@ -142,10 +117,8 @@ DeepInsight-refine/
 | 文档 | 说明 |
 |------|------|
 | `docs/ARCHITECTURE.md` | 系统架构、模块划分与流程说明 |
-| `docs/project_explain_fin.md` | 技术实现细节与模块说明 |
 | `docs/硬件优化技术文档.md` | OpenVINO、缓存与性能优化相关设计 |
 | `docs/系统重构优化日志.md` | 重构与优化时间线、技术决策与最近更新 |
-| `eval_suite/results/evaluation_report.md` | 最新自动生成评测报告 |
 
 ---
 
