@@ -53,15 +53,24 @@ def create_openai_client_safe(api_key, base_url, timeout=60.0):
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
 from query_possibility_generator import QueryPossibilityGenerator, QueryPossibility
-from table_selector import IntelligentTableSelector
 
-# 🧠 集成Prompt模板系统
 try:
-    from prompt_integration import EnhancedPromptBuilder
+    from hardware.universal_hardware_optimizer import universal_optimizer
+    CACHE_AVAILABLE = True
+except ImportError:
+    universal_optimizer = None
+    CACHE_AVAILABLE = False
+
+# 🧠 集成Prompt模板系统（包含二阶段检索结果格式化器）
+try:
+    from prompt_template_system import EnhancedPromptBuilder, RetrievalResultFormatter
     PROMPT_TEMPLATE_AVAILABLE = True
+    KNOWLEDGE_RAG_AVAILABLE = True
 except ImportError:
     PROMPT_TEMPLATE_AVAILABLE = False
+    KNOWLEDGE_RAG_AVAILABLE = False
     print("⚠️ Prompt模板系统不可用，使用传统Prompt构建")
+    print("⚠️ 二阶段检索 Prompt 构建器不可用")
 
 # --- 全局配置 ---
 # 强制移除系统代理，防止连接 DeepSeek/OpenAI 时的 SSL 错误
@@ -85,7 +94,11 @@ class Text2SQLAgent:
         max_retries: int = 3, 
         max_candidates: int = 3, 
         log_file: str = "data/agent.log",
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
+        temperature: float = 0.0,
+        # ⭐ 新增: Reasoner 模型配置 (用于自愈重试)
+        reasoner_model: Optional[str] = None,
+        use_reasoner_for_healing: bool = False
     ):
         """
         初始化 Agent。
@@ -114,18 +127,34 @@ class Text2SQLAgent:
         self.max_retries = max_retries
         self.max_candidates = max_candidates
         self.log_file = log_file
+        self._config_provided = config is not None  # 记录是否显式传入config
         self.config = config or {}
+        self.temperature = temperature  # LLM 温度参数，0.0 为确定性输出
+        
+        # ⭐ 新增: Reasoner 模型配置 (用于自愈重试)
+        self.reasoner_model = reasoner_model  # 如: "deepseek-reasoner"
+        self.use_reasoner_for_healing = use_reasoner_for_healing
+        if self.use_reasoner_for_healing and self.reasoner_model:
+            self._write_log(f"✨ Reasoner 自愈模式已启用: {self.reasoner_model}")
         
         # 3. 🧠 初始化Prompt模板系统
-        if PROMPT_TEMPLATE_AVAILABLE:
+        # ⭐ 只有显式传入非空config时才启用KECA (EnhancedPromptBuilder)
+        # 评测时传入 config=None 将禁用KECA，保持 prompt_builder=None
+        if PROMPT_TEMPLATE_AVAILABLE and self._config_provided:
             try:
                 self.prompt_builder = EnhancedPromptBuilder(self.config)
-                self._write_log("✅ Prompt模板系统初始化成功")
+                self._write_log("✅ Prompt模板系统初始化成功(KECA已启用)")
             except Exception as e:
                 self.prompt_builder = None
                 self._write_log(f"⚠️ Prompt模板系统初始化失败: {e}")
         else:
             self.prompt_builder = None
+            if not self._config_provided:
+                self._write_log("ℹ️ KECA已禁用(未传入config)")
+        
+        # 3.1 🆕 最近一次检索结果缓存（供前端展示"Agent思考过程"）
+        # RetrievalResultFormatter 已整合到 prompt_template_system 中
+        self.last_retrieval_result = None
         
         # 4. 新增：可能性生成器（集成LLM和术语词典）
         term_dict = None
@@ -146,44 +175,50 @@ class Text2SQLAgent:
             term_dictionary=term_dict
         )
         
-        # 5. 新增：智能表选择器（传入RAG引擎用于向量计算）
-        # 注意：这里先初始化为None，在RAG引擎创建后再初始化
-        self.table_selector = None
-        
-        # 6. 新增：错误上下文重试机制
+        # 5. 新增：错误上下文重试机制
         self.error_context_manager = ErrorContextManager(max_history=10)
         self.prompt_enhancer = PromptEnhancer(max_context_length=1000)
         
-        # 7. 日志与文件系统准备
+        # 6. 日志与文件系统准备
         self._setup_logging()
         
-        # 8. 数据库引擎初始化
+        # 7. 数据库引擎初始化
         self.engine = None
         self._init_db_connection()
-        
-        # 9. 初始化表选择器（在RAG引擎传入后）
-        self._init_table_selector()
     
-    def _init_table_selector(self):
-        """初始化表选择器，使用RAG引擎进行语义匹配"""
-        try:
-            # 从RAG引擎的知识库路径中提取schema文件
-            schema_paths = []
-            if hasattr(self.rag, 'kb_paths') and self.rag.kb_paths:
-                schema_paths = [path for path in self.rag.kb_paths if path.endswith('.json')]
-            
-            # 初始化表选择器
-            self.table_selector = IntelligentTableSelector(
-                rag_engine=self.rag,
-                schema_paths=schema_paths
-            )
-            
-            self._write_log(f"表选择器初始化成功，加载了 {len(schema_paths)} 个schema文件")
-            
-        except Exception as e:
-            self._write_log(f"表选择器初始化失败: {e}")
-            # 创建一个基础的表选择器作为备用
-            self.table_selector = IntelligentTableSelector()
+    def reset_state(self) -> None:
+        """
+        重置 Agent 状态，用于评测时确保每个 case 独立运行
+        
+        重置内容：
+        - 错误上下文历史
+        """
+        if hasattr(self, 'error_context_manager') and self.error_context_manager:
+            self.error_context_manager.clear()
+        self._write_log("🔄 Agent 状态已重置")
+
+    def _get_model_for_attempt(self, attempt: int) -> str:
+        """
+        根据重试次数选择合适的模型
+        
+        策略：
+        - attempt == 1 (首次生成): 使用主模型 (deepseek-chat)
+        - attempt > 1 (自愈重试): 如果启用 Reasoner 模式，使用推理模型
+        
+        :param attempt: 当前尝试次数 (1-based)
+        :return: 模型名称
+        """
+        # 首次生成使用主模型
+        if attempt == 1:
+            return self.model_name
+        
+        # 自愈重试: 检查是否启用 Reasoner 模式
+        if self.use_reasoner_for_healing and self.reasoner_model:
+            self._write_log(f"🧠 [自愈] 第{attempt}次重试，切换至 Reasoner: {self.reasoner_model}")
+            return self.reasoner_model
+        
+        # 默认使用主模型
+        return self.model_name
 
     def _setup_logging(self):
         """确保日志目录存在"""
@@ -206,6 +241,470 @@ class Text2SQLAgent:
                 self._write_log(f"❌ 数据库连接失败: {e}")
                 self.engine = None
 
+    def _detect_db_type(self) -> str:
+        """
+        检测当前连接的数据库类型
+        
+        Returns:
+            数据库类型字符串: 'mysql', 'sqlite', 'sqlserver', 'postgresql'
+        """
+        if not self.db_uris:
+            return "mysql"  # 默认
+        
+        uri = self.db_uris[0].lower()
+        
+        if 'sqlite' in uri:
+            return 'sqlite'
+        elif 'mssql' in uri or 'sqlserver' in uri or 'pyodbc' in uri:
+            return 'sqlserver'
+        elif 'postgresql' in uri or 'postgres' in uri:
+            return 'postgresql'
+        else:
+            return 'mysql'
+
+    def retrieve_context_two_stage(self, query: str, enable_pruning: bool = True) -> Dict:
+        """
+        二阶段混合检索 (Knowledge Scheduler)
+        
+        调用 RAG Engine 的三维统一检索，获取:
+        - Schema 精排结果 (粗排 -> LLM精排)
+        - Few-Shot 匹配示例
+        - Terms 术语匹配
+        
+        Args:
+            query: 用户自然语言查询
+            enable_pruning: 是否启用 LLM 精排（实验模式控制）
+            
+        Returns:
+            Dict: retrieve_context() 返回的检索结果
+        """
+        if not hasattr(self.rag, 'retrieve_context'):
+            self._write_log("⚠️ RAG Engine 不支持 retrieve_context，回退到传统检索")
+            return None
+        
+        # 构建配置（从 prompt_builder 获取 KECA 配置）
+        keca_config = None
+        if hasattr(self, 'prompt_builder') and self.prompt_builder:
+            keca_config = {
+                'example_queries': getattr(self.prompt_builder.manager, 'example_queries', []),
+                'term_dictionary': {}
+            }
+            # 获取术语词典
+            term_dict = getattr(self.prompt_builder.manager, 'term_dictionary', None)
+            if term_dict and hasattr(term_dict, 'terms'):
+                keca_config['term_dictionary'] = term_dict.terms
+        
+        # 调用三维统一检索
+        try:
+            retrieval_result = self.rag.retrieve_context(
+                query=query,
+                config=keca_config,
+                llm_client=self.client,
+                model_name=self.model_name,
+                db_engine=self.engine,
+                enable_pruning=enable_pruning,
+                rough_top_k=12,
+                include_sample_data=True
+            )
+            
+            # 缓存检索结果（供前端展示）
+            self.last_retrieval_result = retrieval_result
+            
+            self._write_log(f"二阶段检索完成: {len(retrieval_result.get('core_tables', []))} 核心表, "
+                          f"{len(retrieval_result.get('matched_examples', []))} 示例, "
+                          f"{len(retrieval_result.get('matched_terms', []))} 术语")
+            
+            return retrieval_result
+            
+        except Exception as e:
+            self._write_log(f"❌ 二阶段检索失败: {e}")
+            return None
+
+    def get_retrieval_display_info(self) -> Optional[Dict[str, str]]:
+        """
+        获取检索结果的展示信息（供前端 UI 展示"Agent思考过程"）
+        
+        Returns:
+            格式化的展示信息字典，包含:
+            - rough_candidates_display: 粗排候选表
+            - core_tables_display: 精排核心表
+            - matched_terms_display: 匹配术语
+            - matched_examples_display: 匹配示例
+            - metrics_display: 性能指标
+        """
+        if not self.last_retrieval_result:
+            return None
+        
+        if not KNOWLEDGE_RAG_AVAILABLE:
+            return None
+        
+        return RetrievalResultFormatter.format_for_display(self.last_retrieval_result)
+
+    # =====================================================================
+    # 🔧 P1: 扩展错误类型检测
+    # =====================================================================
+    
+    def _detect_sql_error_type(self, error_message: str) -> Tuple[str, str]:
+        """
+        P1: 检测 SQL 错误类型并返回修复建议
+        
+        扩展自愈范围：不仅处理"表不存在"，还处理列错误、语法错误等。
+        
+        Args:
+            error_message: SQL 执行错误信息
+            
+        Returns:
+            (错误类型, 修复建议)
+        """
+        import re
+        
+        error_patterns = {
+            "unknown_table": [
+                r"Table '.*' doesn't exist",
+                r"no such table:",
+                r"Unknown table",
+            ],
+            "unknown_column": [
+                r"Unknown column '(\w+)'",
+                r"no such column: (\w+)",
+                r"column \"(\w+)\" does not exist",
+            ],
+            "ambiguous_column": [
+                r"Column '(\w+)' in .* is ambiguous",
+                r"ambiguous column name: (\w+)",
+            ],
+            "syntax_error": [
+                r"You have an error in your SQL syntax",
+                r"syntax error at or near",
+                r"near \".*\": syntax error",
+            ],
+            "join_error": [
+                r"Unknown table '(\w+)' in.*join",
+                r"ON clause contains column that is not in any table",
+            ],
+            "aggregation_error": [
+                r"isn't in GROUP BY",
+                r"must appear in the GROUP BY clause",
+            ],
+        }
+        
+        fix_suggestions = {
+            "unknown_table": "请核实表名，参考 Database Index 中的正确表名",
+            "unknown_column": "请检查列名拼写，参考表 Schema 中的正确列名",
+            "ambiguous_column": "请在列名前添加表别名，如 `t.column`",
+            "syntax_error": "请检查 SQL 语法，特别是括号、逗号、引号的匹配",
+            "join_error": "请确认 JOIN 条件中的表名和列名正确",
+            "aggregation_error": "请确保 SELECT 中的非聚合列都在 GROUP BY 中",
+        }
+        
+        for error_type, patterns in error_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, error_message, re.IGNORECASE):
+                    suggestion = fix_suggestions.get(error_type, "请检查 SQL 语法")
+                    self._write_log(f"🔍 [自愈] 检测到错误类型: {error_type}")
+                    return error_type, suggestion
+        
+        return "other", "请仔细检查 SQL 语法"
+
+    # =====================================================================
+    # 🔧 动态自愈补全机制 (Dynamic Self-Healing)
+    # =====================================================================
+    
+    def _detect_table_not_found_error(self, error_message: str) -> Optional[str]:
+        """
+        检测是否为「表不存在」类型的错误，并提取目标表名
+        
+        支持的错误模式:
+        - MySQL: Table 'database.tablename' doesn't exist
+        - MySQL: Unknown table 'tablename'
+        - SQLite: no such table: tablename
+        - SQL Server: Invalid object name 'tablename'
+        
+        Args:
+            error_message: SQL 执行错误信息
+            
+        Returns:
+            检测到的目标表名，未检测到则返回 None
+        """
+        import re
+        
+        patterns = [
+            # MySQL: Table 'db.table' doesn't exist
+            r"Table '(?:[\w]+\.)?(\w+)' doesn't exist",
+            # MySQL: Unknown table 'table'
+            r"Unknown table '(\w+)'",
+            # SQLite: no such table: table
+            r"no such table:\s*(\w+)",
+            # SQL Server: Invalid object name 'table'
+            r"Invalid object name '(\w+)'",
+            # Generic: table 'tablename' not found
+            r"table '(\w+)' not found",
+            # Generic: relation "tablename" does not exist (PostgreSQL)
+            r'relation "(\w+)" does not exist',
+        ]
+        
+        error_lower = error_message.lower()
+        
+        for pattern in patterns:
+            match = re.search(pattern, error_message, re.IGNORECASE)
+            if match:
+                table_name = match.group(1)
+                self._write_log(f"🔍 [自愈] 检测到表不存在错误: '{table_name}'")
+                return table_name
+        
+        return None
+    
+    def _match_table_from_index(self, target_table: str) -> Optional[str]:
+        """
+        从 Database Index 中模糊匹配实际存在的表名
+        
+        匹配策略（按优先级）:
+        1. 精确匹配（忽略大小写）
+        2. 去除常见前缀后匹配（tbl_, tb_, t_）
+        3. 包含关系匹配
+        4. 编辑距离最小匹配（阈值 ≤ 2）
+        
+        Args:
+            target_table: 错误消息中提取的目标表名
+            
+        Returns:
+            匹配到的实际表名，未匹配到则返回 None
+        """
+        if not hasattr(self.rag, '_get_database_index'):
+            self._write_log("⚠️ [自愈] RAG 引擎不支持 _get_database_index")
+            return None
+        
+        database_index = self.rag._get_database_index()
+        if not database_index:
+            self._write_log("⚠️ [自愈] Database Index 为空")
+            return None
+        
+        target_lower = target_table.lower()
+        
+        # 1. 精确匹配（忽略大小写）
+        for table in database_index:
+            if table.lower() == target_lower:
+                self._write_log(f"✅ [自愈] 精确匹配: {target_table} -> {table}")
+                return table
+        
+        # 2. 去除常见前缀后匹配
+        prefixes = ['tbl_', 'tb_', 't_', 'dim_', 'fact_', 'vw_']
+        for prefix in prefixes:
+            if target_lower.startswith(prefix):
+                stripped = target_lower[len(prefix):]
+                for table in database_index:
+                    if table.lower() == stripped or table.lower().endswith(stripped):
+                        self._write_log(f"✅ [自愈] 前缀去除匹配: {target_table} -> {table}")
+                        return table
+        
+        # 3. 包含关系匹配（目标名是实际表名的子串或反之）
+        for table in database_index:
+            table_lower = table.lower()
+            if target_lower in table_lower or table_lower in target_lower:
+                self._write_log(f"✅ [自愈] 包含匹配: {target_table} -> {table}")
+                return table
+        
+        # 4. 编辑距离匹配（Levenshtein，阈值 2）
+        def levenshtein_distance(s1: str, s2: str) -> int:
+            if len(s1) < len(s2):
+                return levenshtein_distance(s2, s1)
+            if len(s2) == 0:
+                return len(s1)
+            
+            previous_row = range(len(s2) + 1)
+            for i, c1 in enumerate(s1):
+                current_row = [i + 1]
+                for j, c2 in enumerate(s2):
+                    insertions = previous_row[j + 1] + 1
+                    deletions = current_row[j] + 1
+                    substitutions = previous_row[j] + (c1 != c2)
+                    current_row.append(min(insertions, deletions, substitutions))
+                previous_row = current_row
+            return previous_row[-1]
+        
+        best_match = None
+        best_distance = float('inf')
+        
+        for table in database_index:
+            distance = levenshtein_distance(target_lower, table.lower())
+            if distance <= 2 and distance < best_distance:
+                best_distance = distance
+                best_match = table
+        
+        if best_match:
+            self._write_log(f"✅ [自愈] 编辑距离匹配 (距离={best_distance}): {target_table} -> {best_match}")
+            return best_match
+        
+        self._write_log(f"⚠️ [自愈] 未能匹配表名: {target_table}")
+        return None
+    
+    def _get_dynamic_table_schema(self, table_name: str) -> Optional[str]:
+        """
+        动态获取指定表的详细 Schema 信息
+        
+        用于自愈机制：当检测到表不存在错误时，获取正确表的 Schema
+        并追加到下次重试的 context 中
+        
+        Args:
+            table_name: 表名
+            
+        Returns:
+            格式化的 Schema 信息字符串，获取失败返回 None
+        """
+        if not hasattr(self.rag, '_extract_table_details'):
+            self._write_log("⚠️ [自愈] RAG 引擎不支持 _extract_table_details")
+            return None
+        
+        try:
+            # 调用 RAG 引擎获取表详情
+            table_details = self.rag._extract_table_details([table_name])
+            
+            if not table_details:
+                self._write_log(f"⚠️ [自愈] 未找到表详情: {table_name}")
+                return None
+            
+            detail = table_details[0]
+            
+            # 格式化为 Schema 字符串
+            schema_lines = [
+                f"\n## [自愈补全] 表 `{table_name}` 的详细 Schema",
+                f"**描述**: {detail.get('description', '无描述')}",
+                "",
+                "**字段列表**:"
+            ]
+            
+            for col in detail.get('columns', []):
+                col_line = f"  - `{col['name']}` ({col['type']}): {col['description']}"
+                schema_lines.append(col_line)
+            
+            if detail.get('foreign_keys'):
+                schema_lines.append("")
+                schema_lines.append("**外键关系**:")
+                for fk in detail['foreign_keys']:
+                    schema_lines.append(f"  - {fk}")
+            
+            # 尝试获取样本数据
+            if hasattr(self.rag, '_get_sample_data') and self.engine:
+                sample = self.rag._get_sample_data(table_name, self.engine, limit=3)
+                if sample:
+                    schema_lines.append("")
+                    schema_lines.append("**样本数据 (前3行)**:")
+                    for i, row in enumerate(sample[:3], 1):
+                        schema_lines.append(f"  {i}. {row}")
+            
+            schema_text = "\n".join(schema_lines)
+            self._write_log(f"✅ [自愈] 获取表 Schema 成功: {table_name} ({len(detail.get('columns', []))} 列)")
+            
+            return schema_text
+            
+        except Exception as e:
+            self._write_log(f"❌ [自愈] 获取表 Schema 失败: {e}")
+            return None
+    
+    def _apply_self_healing(self, error_message: str, current_context: str, retry_attempt: int = 1) -> Tuple[bool, str]:
+        """
+        应用动态自愈补全机制（P1 增强版）
+        
+        支持多种错误类型的修复建议：
+        - unknown_table: 表不存在 → 动态 Schema 补全
+        - unknown_column: 列不存在 → 补充相关表的列信息
+        - ambiguous_column: 歧义列 → 提示添加表别名
+        - syntax_error: 语法错误 → 通用修复建议
+        - join_error: JOIN 错误 → 修复 JOIN 条件
+        - aggregation_error: 聚合错误 → GROUP BY 修复建议
+        
+        Args:
+            error_message: SQL 执行错误信息
+            current_context: 当前的 Schema 上下文
+            retry_attempt: 当前重试次数（用于 P3 差异化策略）
+            
+        Returns:
+            (是否应用了自愈, 更新后的上下文)
+        """
+        # P1: 检测错误类型
+        error_type, fix_suggestion = self._detect_sql_error_type(error_message)
+        
+        # P3: 差异化重试策略
+        retry_hint = self._get_retry_enhancement(error_type, retry_attempt)
+        
+        # 情况 1: 表不存在 → 动态 Schema 补全 + FK 关联表
+        if error_type == "unknown_table":
+            target_table = self._detect_table_not_found_error(error_message)
+            if target_table:
+                matched_table = self._match_table_from_index(target_table)
+                if matched_table:
+                    schema_supplement = self._get_dynamic_table_schema(matched_table)
+                    if schema_supplement:
+                        # 🆕 增强：补充 FK 关联表 (最多 2 个)
+                        fk_supplements = []
+                        if self.rag and hasattr(self.rag, '_complete_table_dependencies'):
+                            try:
+                                related_tables = self.rag._complete_table_dependencies([matched_table])
+                                # 跳过第一个（主表本身），取最多 2 个关联表
+                                for related in related_tables[1:3]:
+                                    if related.lower() != matched_table.lower():
+                                        related_schema = self._get_dynamic_table_schema(related)
+                                        if related_schema:
+                                            fk_supplements.append(related_schema)
+                                            self._write_log(f"📎 [自愈] 补充关联表: {related}")
+                            except Exception as e:
+                                self._write_log(f"⚠️ [自愈] 关联表补全失败: {e}")
+                        
+                        healing_header = "\n\n# 🔧 动态自愈补全 (Schema Injection)\n"
+                        healing_note = f"> 系统检测到您可能想查询表 `{matched_table}`，以下是该表的详细信息：\n"
+                        
+                        # 组合主表和关联表 Schema
+                        full_supplement = schema_supplement
+                        if fk_supplements:
+                            full_supplement += "\n\n> 以下是可能需要 JOIN 的关联表：\n" + "\n\n".join(fk_supplements)
+                        
+                        enhanced_context = current_context + healing_header + healing_note + full_supplement + retry_hint
+                        self._write_log(f"✅ [自愈] Schema 补全: {target_table} -> {matched_table} (+{len(fk_supplements)} 关联表)")
+                        return True, enhanced_context
+        
+        # 情况 2: 其他错误类型 → 添加修复建议
+        if error_type != "other":
+            healing_header = "\n\n# 🔧 自愈修复建议\n"
+            healing_note = f"> ⚠️ **错误类型**: {error_type}\n> **修复建议**: {fix_suggestion}\n"
+            enhanced_context = current_context + healing_header + healing_note + retry_hint
+            self._write_log(f"✅ [自愈] 生成修复建议: {error_type} - {fix_suggestion}")
+            return True, enhanced_context
+        
+        # 情况 3: 未知错误类型 → 仅添加通用提示
+        general_hint = "\n\n# 🔧 请仔细检查 SQL 语法\n> 系统检测到执行错误，请参照 Schema 重新生成 SQL。\n"
+        return True, current_context + general_hint + retry_hint
+    
+    def _get_retry_enhancement(self, error_type: str, attempt: int) -> str:
+        """
+        P3: 根据错误类型和重试次数返回差异化增强提示
+        
+        避免每次重试都使用相同策略，减少重复错误。
+        
+        Args:
+            error_type: 错误类型
+            attempt: 当前尝试次数
+            
+        Returns:
+            增强提示字符串
+        """
+        enhancements = {
+            "unknown_table": "请仔细核对表名，参考 Database Index",
+            "unknown_column": "请参考表的详细 Schema 确认列名",
+            "syntax_error": "请检查 SQL 语法，特别是 CTE、窗口函数的写法",
+            "join_error": "请确认 JOIN 条件中的表名和列名正确",
+            "ambiguous_column": "请在列名前添加表别名 (如 `t.column`)",
+            "aggregation_error": "请确保 SELECT 中的非聚合列都在 GROUP BY 中",
+        }
+        
+        base = enhancements.get(error_type, "请仔细检查 SQL")
+        
+        # 第 2 次以上重试，增加更强的约束
+        if attempt >= 2:
+            base += "。**第 3 次尝试：请使用最简单的 SQL 写法，避免复杂子查询和 CTE。**"
+        
+        return f"\n\n> 🔧 **修复提示 (尝试 {attempt})**: {base}\n"
+
+
     def _write_log(self, content: str):
         """
         写入本地运行日志，带时间戳。
@@ -220,10 +719,453 @@ class Text2SQLAgent:
         except Exception:
             pass
 
+    def _estimate_query_complexity(self, query: str) -> str:
+        """
+        智能查询复杂度评估（语义相似度 + 规则兜底）
+        
+        使用 RAG Embedding 模型将查询与预定义的复杂度原型比较，
+        返回语义最相似的复杂度级别。当置信度低时回退到规则方法。
+        
+        Returns:
+            'simple' - 单表简单查询，跳过 RAG
+            'medium' - 中等复杂度，使用有限 RAG (top_k=2)
+            'complex' - 高度复杂，使用完整 RAG (top_k=5)
+        """
+        import numpy as np
+        
+        # 尝试语义方法
+        semantic_result = self._estimate_complexity_semantic(query)
+        if semantic_result:
+            return semantic_result
+        
+        # 回退到规则方法
+        return self._estimate_complexity_rules(query)
+    
+    def _estimate_complexity_semantic(self, query: str) -> str:
+        """
+        基于语义相似度的复杂度评估
+        
+        将查询与预定义的复杂度原型进行余弦相似度比较，
+        返回最匹配的复杂度级别。
+        """
+        import numpy as np
+        
+        # 检查 RAG 引擎是否可用
+        if not hasattr(self, 'rag_engine') or self.rag_engine is None:
+            return None
+        if not hasattr(self.rag_engine, '_get_embedding'):
+            return None
+        if self.rag_engine.model is None:
+            return None
+        
+        # 初始化原型缓存（仅首次调用时计算）
+        if not hasattr(self, '_complexity_prototype_cache'):
+            self._init_complexity_prototype_cache()
+        
+        if not self._complexity_prototype_cache:
+            return None
+        
+        try:
+            # 获取查询的 embedding
+            query_emb = self.rag_engine._get_embedding(query)
+            query_norm = np.linalg.norm(query_emb)
+            if query_norm < 1e-8:
+                return None
+            
+            # 与各复杂度原型比较，找最高相似度
+            best_complexity = None
+            best_score = -1
+            
+            for complexity, proto_embeddings in self._complexity_prototype_cache.items():
+                for proto_emb in proto_embeddings:
+                    proto_norm = np.linalg.norm(proto_emb)
+                    if proto_norm < 1e-8:
+                        continue
+                    # 余弦相似度
+                    sim = np.dot(query_emb, proto_emb) / (query_norm * proto_norm)
+                    if sim > best_score:
+                        best_score = sim
+                        best_complexity = complexity
+            
+            # 置信度检查：分数太低时返回 None，使用规则兜底
+            if best_score < 0.55:
+                self._write_log(f"复杂度语义匹配置信度低 ({best_score:.3f})，使用规则兜底")
+                return None
+            
+            self._write_log(f"复杂度语义匹配: {best_complexity} (相似度={best_score:.3f})")
+            return best_complexity
+            
+        except Exception as e:
+            self._write_log(f"语义复杂度评估异常: {e}")
+            return None
+    
+    def _init_complexity_prototype_cache(self):
+        """
+        初始化复杂度原型的 Embedding 缓存
+        
+        从 config 中读取 complexity_prototypes，预计算所有原型的 embedding，
+        避免每次查询时重复计算。
+        """
+        import numpy as np
+        self._complexity_prototype_cache = {}
+        
+        # 从 config 读取原型
+        prototypes = None
+        if self.config and 'complexity_prototypes' in self.config:
+            prototypes = self.config['complexity_prototypes']
+        elif hasattr(self, 'prompt_builder') and self.prompt_builder:
+            manager = getattr(self.prompt_builder, 'manager', None)
+            if manager and hasattr(manager, 'config'):
+                prototypes = manager.config.get('complexity_prototypes', None)
+        
+        if not prototypes:
+            self._write_log("未找到 complexity_prototypes 配置，语义复杂度检测不可用")
+            return
+        
+        # 预计算所有原型的 embedding
+        for complexity, proto_list in prototypes.items():
+            embeddings = []
+            for proto_query in proto_list:
+                try:
+                    emb = self.rag_engine._get_embedding(proto_query)
+                    if np.linalg.norm(emb) > 1e-8:
+                        embeddings.append(emb)
+                except Exception:
+                    continue
+            if embeddings:
+                self._complexity_prototype_cache[complexity] = embeddings
+        
+        total_protos = sum(len(v) for v in self._complexity_prototype_cache.values())
+        self._write_log(f"复杂度原型缓存初始化完成: {total_protos} 个原型")
+    
+    def _estimate_complexity_rules(self, query: str) -> str:
+        """
+        基于规则的复杂度评估（兜底方法）
+        
+        使用关键词匹配和实体计数来估算复杂度。
+        """
+        import re
+        score = 0
+        
+        # 维度1：复杂关键词检测
+        complex_keywords = [
+            (r'每个.+的|各.+的', 3),
+            (r'排名|排序|前\d+|top\s*\d+', 3),
+            (r'最高|最低|最大|最小', 2),
+            (r'占比|百分比|比例', 4),
+            (r'连续|环比|同比|趋势', 5),
+            (r'累计|累积|running', 4),  # 新增：累计计算
+            (r'关联|关系|对应', 3),
+            (r'对比|比较|差异', 3),
+            (r'增长|下降|变化', 3),
+            (r'购买过|订购过', 4),
+            (r'分[组类别]', 2),
+        ]
+        
+        for pattern, weight in complex_keywords:
+            if re.search(pattern, query, re.IGNORECASE):
+                score += weight
+        
+        # 维度2：实体数量（改进版：避免复合词误判）
+        # "产品类别" 应该被视为一个概念而非两个
+        compound_terms = ['产品类别', '销售订单', '采购订单', '产品库存', '订单明细']
+        query_for_entity = query
+        for term in compound_terms:
+            query_for_entity = query_for_entity.replace(term, '_compound_')
+        
+        distinct_entities = set()
+        entity_map = {
+            r'产品|商品': 'product',
+            r'订单': 'order',
+            r'销售': 'sales',
+            r'客户|顾客|用户': 'customer',
+            r'员工|雇员': 'employee',
+            r'区域|地区': 'region',
+        }
+        for pattern, entity in entity_map.items():
+            if re.search(pattern, query_for_entity):
+                distinct_entities.add(entity)
+        
+        if len(distinct_entities) >= 2:
+            score += len(distinct_entities)
+        
+        # 维度3：问句长度
+        if len(query) > 30:
+            score += 1
+        if len(query) > 50:
+            score += 1
+        
+        # 复杂度分级
+        if score <= 1:
+            return 'simple'
+        elif score <= 3:
+            return 'medium'
+        else:
+            return 'complex'
+    
+    def _is_simple_query(self, query: str) -> bool:
+        """
+        判断是否为简单查询（兼容性封装）
+        
+        简单查询特征：
+        - 单表查询 (查询所有X、统计X总数)
+        - 不涉及多表关联
+        - 不需要复杂的业务逻辑理解
+        
+        Returns:
+            True 如果是简单查询，应跳过 RAG 增强
+        """
+        complexity = self._estimate_query_complexity(query)
+        is_simple = complexity == 'simple'
+        
+        if is_simple:
+            self._write_log(f"🎯 检测到简单查询 (复杂度={complexity})，跳过 RAG 增强: {query[:30]}...")
+        
+        return is_simple
+
+    def _get_table_map(self) -> str:
+        """
+        生成轻量级数据库表清单（Hybrid RAG 的"全局地图"）
+        
+        作用：让 LLM 知道数据库中存在哪些表，即使 RAG 检索遗漏了某张表，
+        LLM 也可以在自愈阶段请求查看该表的详细结构。
+        
+        Returns:
+            格式化的表名列表字符串，Token 消耗极低（约 200 tokens）
+        """
+        if not hasattr(self.rag, 'documents') or not self.rag.documents:
+            return ""
+        
+        tables = []
+        for doc in self.rag.documents:
+            if doc.startswith('【表名】'):
+                # 提取表名（格式：【表名】TableName）
+                first_line = doc.split('\n')[0]
+                table_name = first_line.replace('【表名】', '').strip()
+                if table_name:
+                    tables.append(table_name)
+        
+        if not tables:
+            return ""
+        
+        return f"=== 数据库全部 {len(tables)} 张表 ===\n{', '.join(tables)}\n"
+    
+    def _get_table_schema(self, table_name: str) -> str:
+        """
+        按需获取指定表的完整结构（Reasoning Self-Correction）
+        
+        当自愈阶段检测到 UNKNOWN_COLUMN 或 UNKNOWN_TABLE 错误时，
+        可以调用此方法动态获取正确的表结构。
+        
+        Args:
+            table_name: 目标表名（大小写不敏感）
+        
+        Returns:
+            该表的完整 Schema 文档，如果未找到则返回空字符串
+        """
+        if not hasattr(self.rag, 'documents') or not self.rag.documents:
+            return ""
+        
+        table_name_lower = table_name.lower()
+        for doc in self.rag.documents:
+            if doc.startswith('【表名】'):
+                first_line = doc.split('\n')[0]
+                doc_table_name = first_line.replace('【表名】', '').strip().lower()
+                if doc_table_name == table_name_lower:
+                    return doc
+        return ""
+
+    def _get_required_tables_from_terms(self, query: str) -> set:
+        """
+        从术语词典中提取查询涉及的必需表（Hint Injection）
+        
+        当查询包含特定业务术语时，强制返回该术语关联的表，
+        无论 RAG 向量搜索分数是多少。
+        
+        Args:
+            query: 用户自然语言查询
+        
+        Returns:
+            需要强制注入的表名集合（小写）
+        """
+        required_tables = set()
+        
+        # 从 PromptBuilder 获取术语词典
+        if hasattr(self, 'prompt_builder') and self.prompt_builder:
+            term_dict = getattr(self.prompt_builder.manager, 'term_dictionary', None)
+            if term_dict and hasattr(term_dict, 'terms'):
+                for term, info in term_dict.terms.items():
+                    if term in query:
+                        # 新格式：info 是 dict {'explanation': ..., 'required_tables': [...]}
+                        if isinstance(info, dict) and 'required_tables' in info:
+                            for table in info['required_tables']:
+                                required_tables.add(table.lower())
+                        # 旧格式兼容：从 explanation 文本中提取表名
+                        elif isinstance(info, str):
+                            # 尝试从解释中提取表名（简单匹配）
+                            import re
+                            table_matches = re.findall(r'(\w+)\s*表', info)
+                            for table in table_matches:
+                                required_tables.add(table.lower())
+        
+        if required_tables:
+            self._write_log(f"Hint Injection: 术语匹配到 {len(required_tables)} 张必需表: {required_tables}")
+        
+        return required_tables
+
+    def _get_cte_few_shot(self, query_complexity: str = 'complex') -> str:
+        """
+        获取 CTE 和窗口函数的 Few-Shot 示例
+        
+        仅在复杂查询时注入示例，帮助 LLM 学习正确的 CTE 语法格式。
+        这可以显著降低"缺失 WITH 关键字"等常见语法错误。
+        
+        Args:
+            query_complexity: 查询复杂度 ('simple'/'medium'/'complex')
+            
+        Returns:
+            格式化的 Few-Shot 示例字符串，或空字符串
+        """
+        # 仅对复杂查询注入示例
+        if query_complexity != 'complex':
+            return ""
+        
+        # 从 config 或 prompt_builder 获取 cte_few_shot
+        cte_examples = []
+        
+        # 方式1: 直接从 config 读取
+        if self.config and 'cte_few_shot' in self.config:
+            cte_examples = self.config['cte_few_shot']
+        
+        # 方式2: 从 prompt_builder.manager 读取
+        elif hasattr(self, 'prompt_builder') and self.prompt_builder:
+            manager = getattr(self.prompt_builder, 'manager', None)
+            if manager and hasattr(manager, 'config'):
+                cte_examples = manager.config.get('cte_few_shot', [])
+        
+        if not cte_examples:
+            return ""
+        
+        # 格式化示例
+        few_shot_text = "\n【复杂查询参考示例 - 请严格遵循 WITH 关键字语法】\n"
+        for i, example in enumerate(cte_examples[:2], 1):  # 最多展示 2 个示例以节省 Token
+            few_shot_text += f"\n示例 {i}: {example.get('description', '')}\n"
+            few_shot_text += f"问题: {example.get('question', '')}\n"
+            few_shot_text += f"SQL:\n{example.get('sql', '')}\n"
+        
+        self._write_log(f"Few-Shot: 注入 {min(len(cte_examples), 2)} 个 CTE 示例")
+        return few_shot_text
+
+
+    def _get_db_type_info(self) -> dict:
+        """
+        获取当前数据库类型信息，用于生成适配的 SQL Prompt
+        
+        Returns:
+            dict: 包含 db_type, db_expert, date_hint, syntax_tips
+        """
+        # 从配置或连接字符串推断数据库类型
+        db_type = self.config.get("db_type", "").lower()
+        
+        # 如果配置中没有明确指定，从连接字符串推断
+        if not db_type and self.db_uris:
+            uri = self.db_uris[0].lower()
+            if "mysql" in uri or "pymysql" in uri:
+                db_type = "mysql"
+            elif "sqlite" in uri:
+                db_type = "sqlite"
+            elif "postgresql" in uri or "psycopg" in uri:
+                db_type = "postgresql"
+            elif "mssql" in uri or "sqlserver" in uri or "pyodbc" in uri:
+                db_type = "sqlserver"
+            elif "oracle" in uri:
+                db_type = "oracle"
+            else:
+                db_type = "sql"  # 通用 SQL
+        
+        # 根据数据库类型返回相应的信息
+        db_info = {
+            "mysql": {
+                "db_type": "MySQL",
+                "db_expert": "精通 MySQL 的高级数据库工程师",
+                "date_hint": "日期处理请使用 MySQL 函数，如 `YEAR(date_col)`, `MONTH(date_col)`, `DATE_FORMAT(date_col, '%Y-%m')`, `DATEDIFF(date1, date2)`",
+                "syntax_tips": [
+                    "使用 LIMIT 而非 TOP 进行分页",
+                    "字符串连接使用 CONCAT() 函数",
+                    "GROUP BY 子句中需要包含 SELECT 中所有非聚合列",
+                    "使用 IFNULL() 处理空值",
+                    "支持 CTE (WITH 子句) 和窗口函数"
+                ]
+            },
+            "sqlite": {
+                "db_type": "SQLite",
+                "db_expert": "精通 SQLite 的高级数据库工程师",
+                "date_hint": "日期处理请使用 `strftime` 函数，如 `strftime('%Y', date_col)`, `strftime('%m', date_col)`, `julianday(date1) - julianday(date2)`",
+                "syntax_tips": [
+                    "使用 LIMIT 进行分页",
+                    "字符串连接使用 || 运算符",
+                    "支持灵活的 GROUP BY",
+                    "使用 IFNULL() 或 COALESCE() 处理空值"
+                ]
+            },
+            "postgresql": {
+                "db_type": "PostgreSQL",
+                "db_expert": "精通 PostgreSQL 的高级数据库工程师",
+                "date_hint": "日期处理请使用 `EXTRACT(YEAR FROM date_col)`, `DATE_TRUNC('month', date_col)`, `date1 - date2`",
+                "syntax_tips": [
+                    "使用 LIMIT 和 OFFSET 进行分页",
+                    "字符串连接使用 || 或 CONCAT()",
+                    "支持丰富的窗口函数和 CTE",
+                    "使用 COALESCE() 处理空值"
+                ]
+            },
+            "sqlserver": {
+                "db_type": "SQL Server",
+                "db_expert": "精通 SQL Server 的高级数据库工程师",
+                "date_hint": "日期处理请使用 `YEAR(date_col)`, `MONTH(date_col)`, `DATEPART()`, `DATEDIFF()`",
+                "syntax_tips": [
+                    "使用 TOP N 或 OFFSET-FETCH 进行分页（如 TOP 10 或 ORDER BY col OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY）",
+                    "字符串连接使用 + 或 CONCAT()",
+                    "使用 ISNULL() 或 COALESCE() 处理空值",
+                    "CTE语法: WITH cte_name AS (SELECT...), cte2 AS (SELECT...) SELECT...（必须以WITH开头，多个CTE用逗号分隔）",
+                    "窗口函数: ROW_NUMBER() OVER (PARTITION BY col ORDER BY col) 用于分组排名",
+                    "Schema前缀: 表名应包含Schema前缀如 Sales.SalesOrderHeader, Production.Product"
+                ]
+            },
+            "oracle": {
+                "db_type": "Oracle",
+                "db_expert": "精通 Oracle 的高级数据库工程师",
+                "date_hint": "日期处理请使用 `EXTRACT(YEAR FROM date_col)`, `TO_CHAR(date_col, 'YYYY-MM')`, `date1 - date2`",
+                "syntax_tips": [
+                    "使用 ROWNUM 或 FETCH FIRST 进行分页",
+                    "字符串连接使用 || 运算符",
+                    "使用 NVL() 处理空值"
+                ]
+            }
+        }
+        
+        # 默认返回通用 SQL 信息
+        default_info = {
+            "db_type": "SQL",
+            "db_expert": "精通 SQL 的高级数据库工程师",
+            "date_hint": "请使用标准 SQL 日期函数",
+            "syntax_tips": ["使用标准 SQL 语法"]
+        }
+        
+        return db_info.get(db_type, default_info)
+
     def _build_traditional_prompt(self, query: str, context: str, best_interpretation: str, current_try: int) -> str:
-        """构建传统的SQL生成Prompt"""
+        """构建传统的SQL生成Prompt（自动适配数据库类型）"""
+        # 获取数据库类型信息
+        db_info = self._get_db_type_info()
+        
+        # 构建语法提示
+        syntax_tips_str = "\n".join([f"        - {tip}" for tip in db_info["syntax_tips"]])
+        
         base_prompt = f"""
-        你是一个精通 SQLite 的高级数据库工程师。
+        你是一个{db_info["db_expert"]}。
+        
+        【数据库类型】: {db_info["db_type"]}
         
         【Schema 信息】:
         {context}
@@ -232,13 +1174,16 @@ class Text2SQLAgent:
         【已确认的业务逻辑】: "{best_interpretation}"
         
         【任务】:
-        编写可执行的 SQL 语句。
+        编写可执行的 {db_info["db_type"]} SQL 语句。
         
         【严格约束】:
         1. 仅输出 SQL 代码。
         2. 不要使用 Markdown 格式 (不要写 ```sql)。
-        3. 日期处理请使用 `strftime` 函数，例如 `strftime('%Y', order_date) = '2016'`。
+        3. {db_info["date_hint"]}。
         4. 不要解释代码。
+        
+        【{db_info["db_type"]} 语法要点】:
+{syntax_tips_str}
         """
         
         # 如果有错误历史，获取重试上下文并增强prompt
@@ -300,6 +1245,145 @@ class Text2SQLAgent:
                 return True
         
         return False
+
+    def _extract_sql_from_response(self, response: str) -> str:
+        """
+        从 LLM 响应中智能提取 SQL 语句
+        
+        支持的格式：
+        1. 纯 SQL 语句
+        2. ```sql ... ``` 代码块
+        3. 完整 CoT 格式（含 1.查询理解, 2.涉及表格, 3.SQL查询 等结构化输出）
+        4. 数字编号格式 (如 "3. **SQL查询**:" 后跟代码块)
+        
+        集成 SQLPreValidator 进行 CTE 修复和语法预验证
+        
+        Returns:
+            提取的 SQL 语句
+        """
+        import re
+        
+        if not response or not response.strip():
+            return ""
+        
+        # 尝试导入 SQLPreValidator
+        sql_validator = None
+        try:
+            from error_context_system import SQLPreValidator
+            sql_validator = SQLPreValidator()
+        except ImportError:
+            pass
+        
+        def _post_process_sql(sql: str) -> str:
+            """后处理: 使用 SQLPreValidator 修复和验证 SQL"""
+            if not sql:
+                return sql
+            if sql_validator:
+                fixed = sql_validator.fix_and_format(sql)
+                if fixed:
+                    return fixed
+            return sql
+        
+        # 策略 0: 检测 CoT 格式 - 如果响应以数字编号开头 (如 "1. **查询理解**")
+        # 这表明是完整的 CoT 输出，需要从中提取 SQL 代码块
+        cot_pattern = r'^\s*1\.\s*\*?\*?查询理解'
+        if re.match(cot_pattern, response, re.MULTILINE):
+            self._write_log("📝 SQL提取器: 检测到CoT格式输出")
+            
+            # 从 CoT 中提取 ```sql ... ``` 代码块
+            sql_block_pattern = r'```sql\s*(.*?)\s*```'
+            matches = re.findall(sql_block_pattern, response, re.DOTALL | re.IGNORECASE)
+            if matches:
+                # 返回最后一个 SQL 代码块（通常是最终版本）
+                extracted = matches[-1].strip()
+                # 移除可能的注释行
+                lines = [line for line in extracted.split('\n') if not line.strip().startswith('--')]
+                extracted = '\n'.join(lines).strip()
+                self._write_log(f"📝 SQL提取器: 从CoT中成功提取SQL")
+                return _post_process_sql(extracted)
+            
+            # 尝试提取无标记代码块
+            code_block_pattern = r'```\s*(.*?)\s*```'
+            matches = re.findall(code_block_pattern, response, re.DOTALL)
+            for match in matches:
+                if self._looks_like_sql(match):
+                    self._write_log(f"📝 SQL提取器: 从CoT无标记代码块提取")
+                    return _post_process_sql(match.strip())
+            
+            # CoT 格式但未找到代码块，返回空（避免将整个 CoT 当作 SQL）
+            self._write_log("⚠️ SQL提取器: CoT格式但未找到SQL代码块")
+            return ""
+        
+        # 策略 1：尝试提取 ```sql ... ``` 代码块
+        sql_block_pattern = r'```sql\s*(.*?)\s*```'
+        matches = re.findall(sql_block_pattern, response, re.DOTALL | re.IGNORECASE)
+        if matches:
+            # 返回最后一个 SQL 代码块（通常是最终版本）
+            extracted = matches[-1].strip()
+            self._write_log(f"📝 SQL提取器: 从 ```sql 代码块提取")
+            return _post_process_sql(extracted)
+        
+        # 策略 2：尝试提取 ``` ... ``` 无语言标记的代码块
+        code_block_pattern = r'```\s*(.*?)\s*```'
+        matches = re.findall(code_block_pattern, response, re.DOTALL)
+        for match in matches:
+            # 检查是否看起来像 SQL
+            if self._looks_like_sql(match):
+                self._write_log(f"📝 SQL提取器: 从无标记代码块提取")
+                return _post_process_sql(match.strip())
+        
+        # 策略 3: 如果响应包含 CoT 标记但没有代码块，跳过
+        cot_markers = ['**查询理解**', '**涉及表格**', '**SQL查询**', '**查询说明**', '**注意事项**']
+        has_cot_markers = any(marker in response for marker in cot_markers)
+        if has_cot_markers:
+            self._write_log("⚠️ SQL提取器: 包含CoT标记但无代码块，跳过")
+            return ""
+        
+        # 策略 4：查找 SELECT/WITH 开头的语句（处理纯 SQL 或混合文本）
+        # 使用更精确的模式匹配 SQL 语句结构
+        sql_patterns = [
+            # WITH ... SELECT (CTE) - 匹配到分号或文档结尾
+            r'(WITH\s+\w+.*?SELECT\s+[\s\S]+?)(?:;|\n\s*\n|\n\d+\.|\Z)',
+            # 普通 SELECT - 匹配到分号或文档结尾
+            r'(SELECT\s+[\s\S]+?(?:FROM\s+[\s\S]+?))(?:;|\n\s*\n|\n\d+\.|\Z)',
+        ]
+        
+        for pattern in sql_patterns:
+            match = re.search(pattern, response, re.IGNORECASE)
+            if match:
+                candidate = match.group(1).strip()
+                # 清理可能混入的 Markdown
+                candidate = re.sub(r'\*\*[^*]+\*\*', '', candidate)  # 移除 **粗体**
+                candidate = candidate.strip()
+                if self._looks_like_sql(candidate):
+                    self._write_log(f"📝 SQL提取器: 从文本中模式匹配提取")
+                    return _post_process_sql(candidate)
+        
+        # 策略 5：如果响应本身就是纯 SQL
+        if self._looks_like_sql(response):
+            self._write_log(f"📝 SQL提取器: 使用原始响应（纯SQL）")
+            return _post_process_sql(response.strip())
+        
+        # 策略 6：返回空（避免将非 SQL 内容当作 SQL）
+        self._write_log(f"⚠️ SQL提取器: 无法提取有效SQL")
+        return ""
+
+    def _looks_like_sql(self, text: str) -> bool:
+        """判断文本是否像 SQL 语句"""
+        if not text:
+            return False
+        text_lower = text.lower().strip()
+        # 必须包含 SELECT 和 FROM
+        if 'select' not in text_lower:
+            return False
+        if 'from' not in text_lower and 'with' not in text_lower:
+            return False
+        # 不应该包含明显的非 SQL 内容
+        non_sql_markers = ['**查询理解**', '**涉及表格**', '**查询说明**', '**注意事项**']
+        for marker in non_sql_markers:
+            if marker in text:
+                return False
+        return True
 
     def analyze_intent(self, query: str, schema_context: str) -> str:
         """
@@ -447,7 +1531,12 @@ class Text2SQLAgent:
             
             return None, err_msg
 
-    def generate_and_execute_stream(self, query: str, history_context: List[Dict]) -> Generator[Dict, None, None]:
+    def generate_and_execute_stream(
+        self,
+        query: str,
+        history_context: List[Dict],
+        cache_query_key: Optional[str] = None,
+    ) -> Generator[Dict, None, None]:
         """
         【核心主流程】
         流式生成器，逐步输出：
@@ -458,29 +1547,187 @@ class Text2SQLAgent:
         5. 执行结果 (Result)
         """
         self._write_log(f"========== 新对话任务启动: {query} ==========")
+
+        # 查询级缓存：命中则直接返回，避免进入后续 LLM 调用链
+        # cache_query_key 允许把“缓存键”与“实际推理query”解耦，
+        # 以兼容上下文增强提示词和稳定缓存命中。
+        cache_key = None
+        if CACHE_AVAILABLE and universal_optimizer:
+            try:
+                db_id = self.db_uris[0] if self.db_uris else ""
+                key_query = cache_query_key if cache_query_key is not None else query
+                cache_key = universal_optimizer.generate_cache_key(key_query, "", self.model_name, db_id)
+                cached_payload = universal_optimizer.get_cached_result(cache_key)
+                if cached_payload:
+                    cached_rows = cached_payload.get('rows', [])
+                    cached_sql = cached_payload.get('sql', '')
+                    cached_df = pd.DataFrame(cached_rows)
+
+                    self._write_log(f"♻️ 查询缓存命中: rows={len(cached_df)}")
+                    yield {"type": "step", "icon": "♻️", "msg": "命中查询缓存，跳过检索与生成", "status": "complete"}
+                    yield {
+                        "type": "cumulative_token_usage",
+                        "usage": {
+                            'prompt_tokens': 0,
+                            'completion_tokens': 0,
+                            'total_tokens': 0,
+                            'call_count': 0,
+                            'breakdown': []
+                        }
+                    }
+                    yield {"type": "result", "df": cached_df, "sql": cached_sql, "from_cache": True}
+                    return
+            except Exception as e:
+                self._write_log(f"⚠️ 查询缓存读取失败，继续常规流程: {e}")
+        
+        # 🆕 累加 Token 使用统计（跨所有 LLM 调用）
+        # 统计模型：
+        # - G1: T = T_generator (单次生成)
+        # - G2: T = T_selector + T_generator (精排 + 生成)
+        # - G3: T = T_selector + T_generator + Σ T_retry_i (精排 + 生成 + N次自愈)
+        cumulative_token_usage = {
+            'prompt_tokens': 0,
+            'completion_tokens': 0,
+            'total_tokens': 0,
+            'call_count': 0,  # LLM 调用次数
+            'breakdown': []    # 每次调用的详细记录
+        }
         
         # ---------------------------------------------------------
-        # 阶段 1: OpenVINO RAG 检索
+        # 阶段 1: 二阶段混合检索 (粗排 → LLM精排 → Schema获取)
+        # 
+        # 🔧 重构说明 (2026-02-08):
+        # 之前存在两条并行的检索路径，导致 LLM Prompt 使用的是简单检索结果
+        # 现在统一为: 粗排(Top-15) → LLM精排(3-5表) → 构建Prompt
         # ---------------------------------------------------------
-        yield {"type": "step", "icon": "⚡", "msg": "正在调用 OpenVINO 进行向量检索...", "status": "running"}
+        yield {"type": "step", "icon": "⚡", "msg": "正在调用 OpenVINO 二阶段检索...", "status": "running"}
+        
+        context = None
+        retrieval_result = None
+        rag_latency = 0
+        query_complexity = 'medium'  # 默认复杂度
+        selected_tables = None
         
         try:
-            # 调用 rag_engine 的 retrieve 方法 (返回: 文本, 延迟, 内存)
-            context, rag_latency, rag_mem = self.rag.retrieve(query)
+            import time as time_module
+            start_time = time_module.perf_counter()
             
-            perf_info = f"耗时 {rag_latency:.2f}ms | 内存 +{rag_mem:.2f}MB"
-            self._write_log(f"RAG 检索完成. {perf_info}")
+            # 评估查询复杂度
+            query_complexity = self._estimate_query_complexity(query)
+            self._write_log(f"查询复杂度评估: {query_complexity}")
             
-            yield {
-                "type": "step", 
-                "icon": "✅", 
-                "msg": f"OpenVINO 检索完成 ({perf_info})", 
-                "status": "complete",
-                "rag_latency": rag_latency 
-            }
+            # 🆕 统一使用二阶段检索（包含 LLM 精排）
+            retrieval_result = self.retrieve_context_two_stage(query, enable_pruning=True)
+            
+            if retrieval_result:
+                # 从二阶段检索结果中提取信息
+                database_index = retrieval_result.get('database_index', [])
+                core_tables = retrieval_result.get('core_tables', [])
+                core_table_details = retrieval_result.get('core_table_details', [])
+                matched_terms = retrieval_result.get('matched_terms', [])
+                matched_examples = retrieval_result.get('matched_examples', [])
+                sample_data = retrieval_result.get('sample_data', {})
+                metrics = retrieval_result.get('metrics', {})
+                
+                # 🆕 捕获精排器的 Token 消耗，累加到总计
+                selector_token_usage = metrics.get('selector_token_usage', {})
+                if selector_token_usage:
+                    cumulative_token_usage['prompt_tokens'] += selector_token_usage.get('prompt_tokens', 0)
+                    cumulative_token_usage['completion_tokens'] += selector_token_usage.get('completion_tokens', 0)
+                    cumulative_token_usage['total_tokens'] += selector_token_usage.get('total_tokens', 0)
+                    cumulative_token_usage['call_count'] += 1
+                    cumulative_token_usage['breakdown'].append({
+                        'call_type': 'selector',
+                        **selector_token_usage
+                    })
+                    self._write_log(f"精排器 Token: prompt={selector_token_usage.get('prompt_tokens', 0)}, completion={selector_token_usage.get('completion_tokens', 0)}")
+                
+                # 构建 context（按设计文档格式）
+                context_parts = []
+                
+                # [1] Database Index 全局导航
+                if database_index:
+                    context_parts.append(f"=== 数据库表索引 (共 {len(database_index)} 张表) ===")
+                    context_parts.append(", ".join(database_index[:20]))  # 限制展示数量
+                    if len(database_index) > 20:
+                        context_parts.append(f"... 及其他 {len(database_index) - 20} 张表")
+                
+                # [2] 核心表详细 Schema (精排后的 3-5 张表)
+                if core_table_details:
+                    context_parts.append(f"\n=== 核心表详情 (LLM精排: {len(core_tables)} 张) ===")
+                    for detail in core_table_details:
+                        table_doc = detail.get('document', '')
+                        if table_doc:
+                            context_parts.append(table_doc)
+                        else:
+                            # 如果没有预生成的文档，手动构建
+                            table_name = detail.get('table_name', '')
+                            columns = detail.get('columns', [])
+                            context_parts.append(f"\n【表名】{table_name}")
+                            context_parts.append(f"【描述】{detail.get('description', '')}")
+                            if columns:
+                                col_info = ", ".join([f"{c['name']}({c['type']})" for c in columns[:10]])
+                                context_parts.append(f"【列】{col_info}")
+                
+                # [3] 样本数据（帮助 LLM 理解数据格式）
+                if sample_data:
+                    context_parts.append("\n=== 样本数据 ===")
+                    for table_name, samples in sample_data.items():
+                        if samples:
+                            context_parts.append(f"表 {table_name} 示例: {samples[0]}")
+                
+                # [4] 业务术语（KECA 术语词典匹配）
+                if matched_terms:
+                    context_parts.append("\n=== 业务术语 ===")
+                    for term in matched_terms:
+                        term_name = term.get('term', '')
+                        explanation = term.get('explanation', '')
+                        context_parts.append(f"• {term_name}: {explanation}")
+                
+                # [5] Few-Shot 示例（KECA 示例匹配）
+                if matched_examples:
+                    context_parts.append("\n=== 参考示例 ===")
+                    for ex in matched_examples[:2]:  # 限制 2 个示例
+                        ex_q = ex.get('question', '')
+                        ex_sql = ex.get('sql', '')
+                        context_parts.append(f"问题: {ex_q}\nSQL: {ex_sql}")
+                
+                context = "\n".join(context_parts)
+                
+                # 计算延迟
+                rag_latency = (time_module.perf_counter() - start_time) * 1000
+                
+                yield {
+                    "type": "step",
+                    "icon": "✅",
+                    "msg": f"二阶段检索完成: {len(core_tables)} 核心表 (精排), {len(matched_terms)} 术语 (耗时 {rag_latency:.0f}ms)",
+                    "status": "complete",
+                    "rag_latency": rag_latency
+                }
+                self._write_log(f"二阶段检索完成: 精排核心表={core_tables}, 耗时={rag_latency:.2f}ms")
+            else:
+                # 兜底: 如果二阶段检索失败，使用简单检索
+                self._write_log("⚠️ 二阶段检索返回空，回退到简单检索")
+                rag_context, rag_latency, rag_mem = self.rag.retrieve(query, top_k=10)
+                table_map = self._get_table_map()
+                if table_map and rag_context:
+                    context = f"{table_map}\n=== 相关表详情 ===\n{rag_context}"
+                else:
+                    context = rag_context
+                    
+                yield {
+                    "type": "step",
+                    "icon": "⚠️",
+                    "msg": f"回退简单检索 (耗时 {rag_latency:.0f}ms)",
+                    "status": "complete",
+                    "rag_latency": rag_latency
+                }
+                
         except Exception as e:
             err_msg = f"RAG 检索模块故障: {str(e)}"
             self._write_log(err_msg)
+            import traceback
+            self._write_log(traceback.format_exc())
             yield {"type": "error", "msg": err_msg}
             return
 
@@ -498,87 +1745,30 @@ class Text2SQLAgent:
         yield {"type": "step", "icon": "🔍", "msg": "意图确认: 数据查询请求", "status": "complete"}
 
         # ---------------------------------------------------------
-        # 阶段 2.5: 智能表选择
+        # 阶段 2.5: KECA 知识增强（统一流程，无复杂度分支）
+        # 所有查询均经过完整流程：粗排→精排→KECA增强→Prompt构建
         # ---------------------------------------------------------
-        yield {"type": "step", "icon": "🗄️", "msg": "正在智能分析相关数据表...", "status": "running"}
+        yield {"type": "step", "icon": "🧠", "msg": "KECA 知识增强...", "status": "running"}
         
         try:
-            # 使用智能表选择器分析查询
-            if self.table_selector:
-                # 第一步：初步表选择
-                yield {"type": "step", "icon": "🔍", "msg": "第一步：基于语义相似度初步筛选表...", "status": "running"}
+            # context 已在阶段 1 通过 retrieve_context_two_stage() 构建完成，
+            # 包含：database_index + core_table_details + sample_data + matched_terms + matched_examples
+            # 此阶段仅做日志记录和状态更新
+            
+            if context:
+                # 统计 context 中的知识增强内容
+                term_count = context.count('业务术语') if '业务术语' in context else 0
+                example_count = context.count('参考示例') if '参考示例' in context else 0
                 
-                selected_tables, table_analysis = self.table_selector.select_tables(query, top_k=8)  # 先选择更多表
-                
-                if selected_tables:
-                    # 显示初步筛选结果
-                    initial_tables_info = f"初步筛选出 {len(selected_tables)} 个候选表：\n"
-                    for i, table_rel in enumerate(selected_tables[:5], 1):
-                        initial_tables_info += f"{i}. {table_rel.table_name} (相关性: {table_rel.relevance_score:.1f})\n"
-                    if len(selected_tables) > 5:
-                        initial_tables_info += f"... 还有 {len(selected_tables) - 5} 个表\n"
-                    
-                    yield {"type": "table_analysis", "content": initial_tables_info}
-                    
-                    # 第二步：Agent智能二次筛选
-                    yield {"type": "step", "icon": "🤖", "msg": "第二步：Agent基于语义和表结构进行智能筛选...", "status": "running"}
-                    
-                    # 调用Agent进行二次筛选
-                    final_tables, reasoning = self._agent_table_refinement(query, selected_tables, context)
-                    
-                    # 显示Agent筛选推理过程
-                    yield {"type": "agent_reasoning", "content": reasoning}
-                    
-                    # 第三步：表关联分析
-                    if len(final_tables) > 1:
-                        yield {"type": "step", "icon": "🔗", "msg": "第三步：分析表关联关系...", "status": "running"}
-                        
-                        join_analysis = self._analyze_table_relationships(final_tables)
-                        yield {"type": "join_analysis", "content": join_analysis}
-                    
-                    # 输出最终表选择结果
-                    yield {
-                        "type": "table_selection",
-                        "selected_tables": final_tables,
-                        "analysis": table_analysis,
-                        "table_context": self.table_selector.get_table_context(final_tables)
-                    }
-                    
-                    # 更新context以包含选中的表信息
-                    table_info = f"\n\n=== 智能表选择结果 ===\n"
-                    table_info += f"Agent筛选推理: {reasoning[:200]}...\n" if len(reasoning) > 200 else f"Agent筛选推理: {reasoning}\n"
-                    table_info += f"最终选择表数量: {len(final_tables)}\n"
-                    
-                    # 显示语义匹配信息
-                    if table_analysis.get('use_semantic_matching'):
-                        table_info += "使用OpenVINO语义匹配: ✅\n"
-                    
-                    table_info += "\n"
-                    
-                    for i, table_rel in enumerate(final_tables[:3], 1):  # 只显示前3个最相关的表
-                        table_info += f"{i}. 表名: {table_rel.table_name} (相关性: {table_rel.relevance_score:.1f})\n"
-                        table_info += f"   推理: {table_rel.reasoning}\n"
-                        
-                        # 显示语义相似度
-                        if hasattr(table_rel, 'semantic_similarity') and table_rel.semantic_similarity > 0:
-                            table_info += f"   语义相似度: {table_rel.semantic_similarity:.2f}\n"
-                        
-                        if table_rel.keyword_matches:
-                            table_info += f"   匹配关键词: {', '.join(table_rel.keyword_matches[:3])}\n"
-                        table_info += "\n"
-                    
-                    context = context + table_info
-                    
-                    yield {"type": "step", "icon": "✅", "msg": f"表选择完成，最终选择 {len(final_tables)} 个表", "status": "complete"}
-                    self._write_log(f"表选择完成. 最终选择表: {[t.table_name for t in final_tables]}")
-                else:
-                    yield {"type": "step", "icon": "⚠️", "msg": "未找到明确相关的表，使用全部表信息", "status": "complete"}
+                yield {"type": "step", "icon": "✅", "msg": f"KECA 增强完成: 已注入术语词典和参考示例", "status": "complete"}
+                self._write_log(f"KECA知识增强完成: context长度={len(context)}")
             else:
-                yield {"type": "step", "icon": "⚠️", "msg": "表选择器未初始化，跳过表选择", "status": "complete"}
+                yield {"type": "step", "icon": "⚠️", "msg": "无 KECA 上下文，使用基础 Schema", "status": "complete"}
+                self._write_log("KECA知识增强: 无上下文")
                 
         except Exception as e:
-            self._write_log(f"表选择阶段出错: {e}")
-            yield {"type": "error_log", "content": f"表选择失败: {str(e)}，将使用全部表信息"}
+            self._write_log(f"KECA增强阶段出错: {e}")
+            yield {"type": "error_log", "content": f"KECA增强失败: {str(e)}"}
             # 继续执行，不中断流程
 
         # ---------------------------------------------------------
@@ -649,9 +1839,24 @@ class Text2SQLAgent:
                             "type": "result", 
                             "df": df, 
                             "sql": sql,
+                            "from_cache": False,
                             "selected_possibility": possibility,
                             "alternatives": alternatives
                         }
+
+                        # 写入缓存（查询级）
+                        if cache_key and CACHE_AVAILABLE and universal_optimizer:
+                            try:
+                                universal_optimizer.set_cached_result(
+                                    cache_key,
+                                    {
+                                        'rows': df.to_dict('records'),
+                                        'sql': sql,
+                                        'cached_at': time.time()
+                                    }
+                                )
+                            except Exception as e:
+                                self._write_log(f"⚠️ 查询缓存写入失败: {e}")
                         return
                     elif i == 0:
                         # 最佳理解也失败了，记录错误继续尝试
@@ -673,7 +1878,7 @@ class Text2SQLAgent:
         # 在开始重试前清空错误历史（针对当前查询）
         self.error_context_manager.clear_history()
         
-        for i in range(self.max_retries):
+        for i in range(max(1, self.max_retries)):  # 确保至少执行 1 次 SQL 生成
             current_try = i + 1
             status_msg = f"正在构建 SQL 查询 (第 {current_try} 次尝试)..."
             yield {"type": "step", "icon": "💻", "msg": status_msg, "status": "running"}
@@ -681,18 +1886,27 @@ class Text2SQLAgent:
             # 构建基础 SQL 生成提示词
             if self.prompt_builder:
                 # 🧠 使用增强的Prompt模板系统
+                
+                # 安全获取 Prompt 模式（Streamlit 导入失败不会导致整体降级）
+                prompt_mode_str = 'flexible'  # 默认值
                 try:
-                    # 获取当前的Prompt模式
                     import streamlit as st
-                    prompt_mode_str = st.session_state.get('prompt_mode', 'flexible') if 'streamlit' in globals() else 'flexible'
-                    
+                    if hasattr(st, 'session_state'):
+                        prompt_mode_str = st.session_state.get('prompt_mode', 'flexible')
+                except Exception:
+                    pass  # 非 Streamlit 环境，使用默认值
+                
+                try:
                     from prompt_template_system import PromptMode
                     prompt_mode = PromptMode.PROFESSIONAL if prompt_mode_str == 'professional' else PromptMode.FLEXIBLE
                     
-                    # 构建重试上下文
+                    # 构建重试上下文（安全处理）
                     retry_context = None
                     if current_try > 1:
-                        retry_context = self.error_context_manager.get_retry_context(max_errors=3)
+                        try:
+                            retry_context = self.error_context_manager.get_retry_context(max_errors=3)
+                        except Exception as ctx_err:
+                            self._write_log(f"⚠️ 获取重试上下文失败: {ctx_err}")
                     
                     # 使用增强的Prompt构建器
                     enhanced_prompt = self.prompt_builder.build_sql_generation_prompt(
@@ -701,7 +1915,7 @@ class Text2SQLAgent:
                         rag_context="",  # RAG上下文已经包含在context中
                         selected_tables=selected_tables if 'selected_tables' in locals() else None,
                         query_possibilities=possibilities if 'possibilities' in locals() else None,
-                        retry_context=retry_context.__dict__ if retry_context else None,
+                        retry_context=retry_context.to_dict() if retry_context else None,
                         mode=prompt_mode
                     )
                     
@@ -710,6 +1924,8 @@ class Text2SQLAgent:
                     
                 except Exception as e:
                     self._write_log(f"⚠️ Prompt模板系统失败，回退到传统方式: {e}")
+                    import traceback
+                    self._write_log(f"详细错误: {traceback.format_exc()}")
                     # 回退到传统Prompt构建
                     sys_prompt = self._build_traditional_prompt(query, context, best_interpretation, current_try)
             else:
@@ -721,28 +1937,84 @@ class Text2SQLAgent:
             full_sql_buffer = ""
             
             try:
+                # ⭐ 根据重试次数动态选择模型 (自愈模式可启用 Reasoner)
+                current_model = self._get_model_for_attempt(current_try)
+                
                 stream = self.client.chat.completions.create(
-                    model=self.model_name, 
+                    model=current_model, 
                     messages=[{"role":"user","content":sys_prompt}], 
-                    stream=True
+                    stream=True,
+                    temperature=self.temperature,
+                    # 🆕 启用流式 Token 统计 (DeepSeek/OpenAI 兼容)
+                    stream_options={"include_usage": True}
                 )
                 
+                # 🆕 Token 使用统计（DeepSeek 在最后一个 chunk 返回 usage）
+                token_usage = None
+                
                 for chunk in stream:
-                    delta = chunk.choices[0].delta
-                    if delta.content:
-                        full_sql_buffer += delta.content
-                        yield {"type": "code_chunk", "content": delta.content}
+                    # 🔍 Debug: 检查每个 chunk 的结构
+                    has_usage_attr = hasattr(chunk, 'usage')
+                    usage_value = getattr(chunk, 'usage', None) if has_usage_attr else None
+                    has_choices = bool(chunk.choices) if hasattr(chunk, 'choices') else False
+                    
+                    # 捕获 Token 使用信息（在最后一个 chunk 中）
+                    if has_usage_attr and usage_value is not None:
+                        self._write_log(f"📊 [Token] 检测到 usage chunk: {usage_value}")
+                        token_usage = {
+                            'prompt_tokens': getattr(usage_value, 'prompt_tokens', 0),
+                            'completion_tokens': getattr(usage_value, 'completion_tokens', 0),
+                            'total_tokens': getattr(usage_value, 'total_tokens', 0)
+                        }
+                        self._write_log(f"📊 [Token] 解析结果: {token_usage}")
+                    
+                    if has_choices and chunk.choices[0].delta:
+                        delta = chunk.choices[0].delta
+                        if delta.content:
+                            full_sql_buffer += delta.content
+                            yield {"type": "code_chunk", "content": delta.content}
                 
                 self._write_log(f"SQL 生成 (v{current_try}): {full_sql_buffer}")
+                
+                # 🆕 累加 Token 使用统计到 cumulative_token_usage
+                if token_usage:
+                    cumulative_token_usage['prompt_tokens'] += token_usage['prompt_tokens']
+                    cumulative_token_usage['completion_tokens'] += token_usage['completion_tokens']
+                    cumulative_token_usage['total_tokens'] += token_usage['total_tokens']
+                    cumulative_token_usage['call_count'] += 1
+                    cumulative_token_usage['breakdown'].append({
+                        'call_type': 'generator',
+                        'attempt': current_try,
+                        **token_usage
+                    })
+                    
+                    self._write_log(f"Token 使用 (本次): prompt={token_usage['prompt_tokens']}, completion={token_usage['completion_tokens']}, total={token_usage['total_tokens']}")
+                    self._write_log(f"Token 累计: prompt={cumulative_token_usage['prompt_tokens']}, completion={cumulative_token_usage['completion_tokens']}, total={cumulative_token_usage['total_tokens']}")
+                    
+                    # 仍然 yield 每次调用的 token_usage（保持兼容性）
+                    yield {"type": "token_usage", "usage": token_usage}
 
                 # --- 执行 SQL ---
                 yield {"type": "step", "icon": "⚡", "msg": "正在提交至数据库引擎...", "status": "running"}
-                df, err = self.execute_sql(full_sql_buffer)
+                
+                # 🔧 使用智能 SQL 提取器处理 LLM 响应
+                extracted_sql = self._extract_sql_from_response(full_sql_buffer)
+                
+                df, err = self.execute_sql(extracted_sql)
                 
                 # 情况 A: SQL 报错
                 if err:
                     last_error = err
                     yield {"type": "error_log", "content": f"执行错误: {err}"}
+                    
+                    # 🔧 动态自愈机制：扩展错误检测 + 差异化重试 (P1 + P3)
+                    # ⭐ 只有当 max_retries > 0 时才启用自愈机制（G1/G2禁用，G3启用）
+                    if self.max_retries > 0:
+                        healing_applied, healed_context = self._apply_self_healing(err, context, retry_attempt=current_try)
+                        if healing_applied:
+                            # 更新 context 供下次重试使用
+                            context = healed_context
+                            yield {"type": "step", "icon": "🔧", "msg": f"自愈机制已触发 (尝试 {current_try})，正在重试...", "status": "running"}
                     
                     # 错误信息已经在execute_sql中收集，这里不需要重复收集
                     continue  # 重试
@@ -773,12 +2045,30 @@ class Text2SQLAgent:
                     else:
                         # 次数用尽，虽然为空但也是一种结果
                         yield {"type": "step", "icon": "🏁", "msg": "查询完成 (无数据匹配)", "status": "complete"}
-                        yield {"type": "result", "df": df, "sql": full_sql_buffer}
+                        # 🆕 yield 累计 Token 统计（所有 LLM 调用的总和）
+                        yield {"type": "cumulative_token_usage", "usage": cumulative_token_usage}
+                        yield {"type": "result", "df": df, "sql": full_sql_buffer, "from_cache": False}
                         return
                 
                 # 情况 C: 成功获取数据
                 yield {"type": "step", "icon": "🎉", "msg": f"查询成功！获取 {len(df)} 条记录", "status": "complete"}
-                yield {"type": "result", "df": df, "sql": full_sql_buffer}
+                # 🆕 yield 累计 Token 统计（所有 LLM 调用的总和）
+                yield {"type": "cumulative_token_usage", "usage": cumulative_token_usage}
+                yield {"type": "result", "df": df, "sql": full_sql_buffer, "from_cache": False}
+
+                # 写入缓存（查询级）
+                if cache_key and CACHE_AVAILABLE and universal_optimizer:
+                    try:
+                        universal_optimizer.set_cached_result(
+                            cache_key,
+                            {
+                                'rows': df.to_dict('records'),
+                                'sql': full_sql_buffer,
+                                'cached_at': time.time()
+                            }
+                        )
+                    except Exception as e:
+                        self._write_log(f"⚠️ 查询缓存写入失败: {e}")
                 return
 
             except Exception as e:
@@ -811,207 +2101,10 @@ class Text2SQLAgent:
         
         yield {"type": "error", "msg": failure_report}
 
-    def _agent_table_refinement(self, query: str, selected_tables: List, context: str) -> Tuple[List, str]:
-        """
-        使用Agent进行智能二次筛选，基于语义和表结构分析
-        
-        :param query: 用户查询
-        :param selected_tables: 初步筛选的表列表
-        :param context: Schema上下文信息
-        :return: (最终选择的表列表, 推理过程说明)
-        """
-        try:
-            if not selected_tables:
-                return [], "未找到相关表"
-            
-            # 如果只有1-2个表，直接返回
-            if len(selected_tables) <= 2:
-                reasoning = f"初步筛选结果良好，直接选择 {len(selected_tables)} 个最相关的表"
-                return selected_tables, reasoning
-            
-            # 构建Agent分析提示词
-            tables_info = ""
-            for i, table_rel in enumerate(selected_tables, 1):
-                tables_info += f"{i}. 表名: {table_rel.table_name}\n"
-                tables_info += f"   描述: {table_rel.table_description}\n"
-                tables_info += f"   相关性得分: {table_rel.relevance_score:.1f}\n"
-                tables_info += f"   推理: {table_rel.reasoning}\n"
-                
-                # 显示相关字段
-                if hasattr(table_rel, 'matched_columns') and table_rel.matched_columns:
-                    tables_info += f"   相关字段: "
-                    col_names = [col.get('col', '') for col in table_rel.matched_columns[:3]]
-                    tables_info += ", ".join(col_names) + "\n"
-                
-                tables_info += "\n"
-            
-            prompt = f"""
-            你是一个数据库专家，需要为用户查询选择最合适的数据表。
-            
-            【用户查询】: "{query}"
-            
-            【候选数据表】:
-            {tables_info}
-            
-            【任务】:
-            从上述候选表中选择最适合回答用户查询的表（建议选择2-4个表）。
-            
-            【分析要求】:
-            1. 考虑表的相关性得分和语义匹配度
-            2. 考虑查询所需的数据类型和业务逻辑
-            3. 避免选择冗余或不相关的表
-            4. 如果需要关联查询，选择有关联关系的表
-            
-            【输出格式】:
-            选择的表: [表名1, 表名2, ...]
-            推理过程: [详细说明选择这些表的原因，包括每个表的作用和为什么排除其他表]
-            
-            请严格按照上述格式输出，不要包含其他内容。
-            """
-            
-            # 调用LLM进行分析
-            resp = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1  # 低温度确保分析稳定
-            )
-            
-            analysis_result = resp.choices[0].message.content.strip()
-            
-            # 解析LLM的回复
-            selected_table_names = []
-            reasoning = ""
-            
-            lines = analysis_result.split('\n')
-            for line in lines:
-                line = line.strip()
-                if line.startswith('选择的表:') or line.startswith('Selected tables:'):
-                    # 提取表名
-                    table_part = line.split(':', 1)[1].strip()
-                    # 移除方括号并分割
-                    table_part = table_part.strip('[]')
-                    if table_part:
-                        selected_table_names = [name.strip().strip(',') for name in table_part.split(',')]
-                elif line.startswith('推理过程:') or line.startswith('Reasoning:'):
-                    reasoning = line.split(':', 1)[1].strip()
-                elif reasoning and line:  # 继续推理过程的内容
-                    reasoning += " " + line
-            
-            # 根据LLM选择的表名筛选原始表对象
-            final_tables = []
-            for table_rel in selected_tables:
-                if table_rel.table_name in selected_table_names:
-                    final_tables.append(table_rel)
-            
-            # 如果LLM没有正确选择，回退到前3个最相关的表
-            if not final_tables:
-                final_tables = selected_tables[:3]
-                reasoning = f"Agent分析失败，回退到前 {len(final_tables)} 个最相关的表"
-            
-            # 确保推理过程不为空
-            if not reasoning:
-                reasoning = f"基于相关性分析，选择了 {len(final_tables)} 个最相关的表"
-            
-            self._write_log(f"Agent表筛选完成: 从 {len(selected_tables)} 个候选表中选择了 {len(final_tables)} 个表")
-            
-            return final_tables, reasoning
-            
-        except Exception as e:
-            self._write_log(f"Agent表筛选失败: {e}")
-            # 出错时返回前3个最相关的表
-            fallback_tables = selected_tables[:3]
-            fallback_reasoning = f"Agent分析出错，使用前 {len(fallback_tables)} 个最相关的表作为备选"
-            return fallback_tables, fallback_reasoning
-    
-    def _analyze_table_relationships(self, final_tables: List) -> str:
-        """
-        分析选中表之间的关联关系，识别可能需要的JOIN操作
-        
-        :param final_tables: 最终选择的表列表
-        :return: 关联关系分析结果
-        """
-        try:
-            if len(final_tables) <= 1:
-                return "单表查询，无需关联分析"
-            
-            # 构建表结构信息
-            tables_structure = ""
-            table_columns = {}
-            
-            for table_rel in final_tables:
-                table_name = table_rel.table_name
-                tables_structure += f"表: {table_name}\n"
-                
-                # 收集字段信息
-                columns = []
-                if hasattr(table_rel, 'matched_columns') and table_rel.matched_columns:
-                    for col in table_rel.matched_columns:
-                        col_name = col.get('col', '')
-                        col_type = col.get('type', '')
-                        columns.append(f"{col_name} ({col_type})")
-                
-                # 如果没有匹配的字段信息，尝试从原始表数据获取
-                if not columns:
-                    # 这里可以扩展从self.table_selector.tables中获取完整字段信息
-                    columns = ["字段信息未完全加载"]
-                
-                table_columns[table_name] = columns
-                tables_structure += f"  字段: {', '.join(columns[:5])}\n"  # 只显示前5个字段
-                if len(columns) > 5:
-                    tables_structure += f"  ... 还有 {len(columns) - 5} 个字段\n"
-                tables_structure += "\n"
-            
-            # 使用LLM分析表关联关系
-            prompt = f"""
-            你是一个数据库关联分析专家，需要分析多个表之间的潜在关联关系。
-            
-            【表结构信息】:
-            {tables_structure}
-            
-            【任务】:
-            分析这些表之间可能的关联关系，识别：
-            1. 哪些表可能有主外键关系
-            2. 常见的关联字段（如ID、名称等）
-            3. 建议的JOIN方式
-            4. 关联的业务逻辑
-            
-            【输出要求】:
-            - 简洁明了，重点突出
-            - 如果发现明确的关联关系，说明JOIN条件
-            - 如果关联关系不明确，说明可能的连接方式
-            - 控制在150字以内
-            
-            请直接输出分析结果，不要包含格式标记。
-            """
-            
-            resp = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2
-            )
-            
-            join_analysis = resp.choices[0].message.content.strip()
-            
-            # 添加表数量信息
-            analysis_result = f"涉及 {len(final_tables)} 个表的关联分析:\n\n{join_analysis}"
-            
-            self._write_log(f"表关联分析完成: {len(final_tables)} 个表")
-            
-            return analysis_result
-            
-        except Exception as e:
-            self._write_log(f"表关联分析失败: {e}")
-            # 提供基础的关联分析
-            table_names = [table_rel.table_name for table_rel in final_tables]
-            fallback_analysis = f"涉及 {len(final_tables)} 个表: {', '.join(table_names)}。"
-            fallback_analysis += "建议检查表之间是否有共同的ID字段或名称字段进行关联。"
-            fallback_analysis += "如果是业务相关的表，通常通过主键-外键关系或共同的业务标识符进行JOIN。"
-            
-            return fallback_analysis
 
     def generate_sql_for_possibility(self, possibility: QueryPossibility, context: str, original_query: str) -> str:
         """
-        为特定的查询可能性生成SQL语句
+        为特定的查询可能性生成SQL语句（自动适配数据库类型）
         
         :param possibility: 查询可能性对象
         :param context: Schema上下文信息
@@ -1019,9 +2112,15 @@ class Text2SQLAgent:
         :return: 生成的SQL语句
         """
         try:
+            # 获取数据库类型信息
+            db_info = self._get_db_type_info()
+            syntax_tips_str = "\n".join([f"            - {tip}" for tip in db_info["syntax_tips"]])
+            
             # 构建针对特定理解方式的提示词
             sys_prompt = f"""
-            你是一个精通 SQLite 的高级数据库工程师。
+            你是一个{db_info["db_expert"]}。
+            
+            【数据库类型】: {db_info["db_type"]}
             
             【Schema 信息】:
             {context}
@@ -1047,14 +2146,17 @@ class Text2SQLAgent:
             sys_prompt += f"""
             
             【任务】:
-            根据上述确定的理解方式，编写精确的 SQL 语句。
+            根据上述确定的理解方式，编写精确的 {db_info["db_type"]} SQL 语句。
             
             【严格约束】:
             1. 仅输出 SQL 代码，不要任何解释。
             2. 不要使用 Markdown 格式 (不要写 ```sql)。
-            3. 日期处理请使用 `strftime` 函数，例如 `strftime('%Y', order_date) = '2023'`。
+            3. {db_info["date_hint"]}。
             4. 严格按照关键解释中的SQL条件、表达式和模式来构建查询。
-            5. 确保SQL语法正确且可执行。
+            5. 确保 {db_info["db_type"]} SQL语法正确且可执行。
+            
+            【{db_info["db_type"]} 语法要点】:
+{syntax_tips_str}
             """
             
             # 调用LLM生成SQL

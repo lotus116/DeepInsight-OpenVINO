@@ -1,0 +1,110 @@
+{
+  "business_context": {
+    "industry_terms": "食品饮料贸易、B2B批发、库存管理、供应链、运费成本、订单履约、产品类别、供应商管理、销售区域、员工业绩",
+    "business_rules": "关注产品类别销售趋势，重视供应商稳定性和交货及时性，分析不同国家和地区的客户需求差异，监控运费成本优化物流，注重订单履约率和客户满意度",
+    "data_characteristics": "包含产品(products)、类别(categories)、供应商(suppliers)、客户(customers)、员工(employees)、订单(orders)、订单明细(orderdetails)、承运商(shippers)等核心业务数据，支持订单到发货的完整业务链分析",
+    "analysis_focus": "产品销售分析、客户价值分析、供应商绩效分析、员工业绩分析、区域市场分析、运费成本分析、订单时效分析"
+  },
+  "example_queries": [
+    {
+      "query": "查看销售额最高的产品",
+      "category": "产品分析",
+      "sql_pattern": "SELECT p.ProductName, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) as TotalSales FROM orderdetails od JOIN products p ON od.ProductID = p.ProductID GROUP BY p.ProductID, p.ProductName ORDER BY TotalSales DESC LIMIT 10",
+      "description": "分析产品销售排名，识别畅销产品"
+    },
+    {
+      "query": "各产品类别的销售情况",
+      "category": "类别分析",
+      "sql_pattern": "SELECT c.CategoryName, COUNT(DISTINCT od.ProductID) as ProductCount, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) as TotalSales FROM categories c JOIN products p ON c.CategoryID = p.CategoryID JOIN orderdetails od ON p.ProductID = od.ProductID GROUP BY c.CategoryID, c.CategoryName ORDER BY TotalSales DESC",
+      "description": "按产品类别分析销售额和产品数量分布"
+    },
+    {
+      "query": "订单量最大的客户",
+      "category": "客户分析",
+      "sql_pattern": "SELECT c.CompanyName, c.Country, COUNT(o.OrderID) as OrderCount, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) as TotalAmount FROM customers c JOIN orders o ON c.CustomerID = o.CustomerID JOIN orderdetails od ON o.OrderID = od.OrderID GROUP BY c.CustomerID, c.CompanyName, c.Country ORDER BY TotalAmount DESC LIMIT 10",
+      "description": "分析高价值客户，了解主要客户来源国家"
+    },
+    {
+      "query": "员工销售业绩排名",
+      "category": "员工分析",
+      "sql_pattern": "SELECT CONCAT(e.FirstName, ' ', e.LastName) as EmployeeName, e.Title, COUNT(o.OrderID) as OrderCount, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) as TotalSales FROM employees e JOIN orders o ON e.EmployeeID = o.EmployeeID JOIN orderdetails od ON o.OrderID = od.OrderID GROUP BY e.EmployeeID ORDER BY TotalSales DESC",
+      "description": "评估员工销售绩效，支持业绩考核"
+    },
+    {
+      "query": "需要补货的产品",
+      "category": "库存分析",
+      "sql_pattern": "SELECT p.ProductName, c.CategoryName, s.CompanyName as Supplier, p.UnitsInStock, p.ReorderLevel, p.UnitsOnOrder FROM products p JOIN categories c ON p.CategoryID = c.CategoryID JOIN suppliers s ON p.SupplierID = s.SupplierID WHERE p.UnitsInStock <= p.ReorderLevel AND p.Discontinued = 0 ORDER BY (p.ReorderLevel - p.UnitsInStock) DESC",
+      "description": "识别库存不足需要补货的产品"
+    },
+    {
+      "query": "各承运商的运费统计",
+      "category": "物流分析",
+      "sql_pattern": "SELECT s.CompanyName as ShipperName, COUNT(o.OrderID) as ShipmentCount, AVG(o.Freight) as AvgFreight, SUM(o.Freight) as TotalFreight FROM orders o JOIN shippers s ON o.ShipVia = s.ShipperID WHERE o.ShippedDate IS NOT NULL GROUP BY s.ShipperID, s.CompanyName ORDER BY ShipmentCount DESC",
+      "description": "分析各承运商的使用频率和运费成本"
+    }
+  ],
+  "term_dictionary_path": "",
+  "term_dictionary": {
+    "订单金额": {
+      "explanation": "订单商品的销售金额，需考虑单价、数量和折扣",
+      "required_tables": [
+        "orderdetails",
+        "orders"
+      ]
+    },
+    "运费": {
+      "explanation": "订单的物流运输费用",
+      "required_tables": [
+        "orders"
+      ]
+    },
+    "产品类别": {
+      "explanation": "产品的分类体系，Northwind 有8大类包括饮料、调味品、糖果、乳制品等",
+      "required_tables": [
+        "categories",
+        "products"
+      ]
+    },
+    "库存管理": {
+      "explanation": "跟踪产品库存水平，包括当前库存、再订购点和在途订购",
+      "required_tables": [
+        "products"
+      ]
+    },
+    "客户管理": {
+      "explanation": "客户公司信息和联系人",
+      "required_tables": [
+        "customers"
+      ]
+    },
+    "供应商管理": {
+      "explanation": "产品供应商信息",
+      "required_tables": [
+        "suppliers",
+        "products"
+      ]
+    },
+    "员工管理": {
+      "explanation": "员工信息和组织架构",
+      "required_tables": [
+        "employees"
+      ]
+    },
+    "订单物流": {
+      "explanation": "订单的发货和物流信息，包括承运商和发货日期",
+      "required_tables": [
+        "orders",
+        "shippers"
+      ]
+    },
+    "销售区域": {
+      "explanation": "员工负责的销售区域",
+      "required_tables": [
+        "territories",
+        "employeeterritories"
+      ]
+    }
+  },
+  "example_query_threshold": 0.15,
+  "last_updated": 1770455402.3028274
+}

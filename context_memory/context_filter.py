@@ -275,8 +275,10 @@ class ContextFilter:
         jaccard_similarity = len(intersection) / len(union)
         
         # 考虑关键词频率
-        context_word_freq = Counter(self._extract_keywords(context.content))
-        query_word_freq = Counter(query_keywords)
+        # 注意: _extract_keywords 返回 Set，需要从原文本重新提取以获取频率
+        context_words = [w for w in context.content.lower().split() if w in context_keywords]
+        context_word_freq = Counter(context_words)
+        query_word_freq = Counter([w for w in context_keywords])  # Set中每个词频率为1
         
         # 计算加权相似度
         weighted_score = 0.0

@@ -1,0 +1,255 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>图 4-1 二阶段 RAG 混合检索与知识注入流程图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    background: #f5f7fa;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 32px 16px;
+    min-height: 100vh;
+  }
+  .page {
+    background: #fff;
+    border: 1px solid #dde1e7;
+    border-radius: 10px;
+    padding: 24px 20px 28px;
+    width: 550px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  }
+  /* ---- caption ---- */
+  .fig-title {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+    letter-spacing: .3px;
+  }
+  .fig-subtitle {
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 16px;
+  }
+
+  /* ---- layout: two columns ---- */
+  .main-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ---- boxes ---- */
+  .node {
+    border: 1px solid #2c3e50;
+    border-radius: 4px;
+    padding: 6px 6px;
+    font-size: 13px;
+    text-align: center;
+    background: #f9f9f9;
+    color: #1a1a2e;
+    white-space: nowrap;
+    line-height: 1.3;
+    position: relative;
+  }
+  .node.start-node {
+    border-radius: 20px;
+    background: #eaf1fb;
+    border-color: #2980b9;
+    color: #1a5276;
+    font-weight: 600;
+  }
+  .node.ov-node {
+    background: #e8f4f8;
+    border-color: #2980b9;
+    color: #1a5276;
+  }
+  .node.keca-node {
+    background: #f5eef8;
+    border-color: #7d3c98;
+    color: #4a235a;
+  }
+  .node.db-node {
+    background: #eafaf1;
+    border-color: #1e8449;
+    color: #1a5632;
+  }
+  .node.prompt-node {
+    background: #fef9e7;
+    border-color: #b7950b;
+    color: #5d4037;
+  }
+  .node.final-node {
+    background: #1a2a40;
+    border-color: #1a2a40;
+    color: #fff;
+    font-weight: 700;
+    padding: 7px 20px;
+    border-radius: 4px;
+  }
+
+  /* ---- arrows ---- */
+  .arrow-v {
+    display: flex;
+    justify-content: center;
+    /* margin: 8px 0; */
+    margin-bottom: 10px; 
+    margin-top: 2px;
+  }
+  .arrow-v svg { display: block; }
+  .arrow-h {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-shrink: 0;
+  }
+  .arrow-h svg { display: block; }
+
+  /* ---- subgraphs ---- */
+  .subgraph {
+    border: 1px solid #aab8c8;
+    border-radius: 6px;
+    background: #f8f9fb;
+    padding: 8px 10px 8px;
+    position: relative;
+    width: 100%;
+  }
+  .subgraph.stage1 { border-color: #5dade2; background: #eaf5fb; }
+  .subgraph.stage2 { border-color: #5dade2; background: #eaf5fb; }
+  .subgraph.keca   { border-color: #a569bd; background: #f4ecf7; }
+
+  .subgraph-label {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    padding: 2px 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border-radius: 4px;
+    white-space: nowrap;
+    color: #1a5276;
+    border: 1px solid #5dade2;
+  }
+  .subgraph.keca .subgraph-label { 
+    color: #6c3483;
+    border-color: #a569bd;
+  }
+
+  /* row inside subgraph */
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  /* KECA two-column inner layout */
+  .keca-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .keca-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* final row */
+  .final-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* spacing helper */
+  .gap { margin: 2px 0; }
+  .gap-lg { margin: 3px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="fig-title">图 4-1 二阶段 RAG 混合检索与知识注入流程图</p>
+  <p class="fig-subtitle">Figure 4-1 Two-stage RAG hybrid retrieval and knowledge injection flowchart</p>
+
+  <div class="main-col">
+
+    <!-- 用户查询 -->
+    <div class="node start-node">用户查询 Query</div>
+
+    <div class="arrow-v"><svg width="12" height="16"><path d="M6 0 L6 10 M3 7 L6 13 L9 7" stroke="#555" stroke-width="1.2" fill="none"/></svg></div>
+
+    <!-- OpenVINO BGE -->
+    <div class="node ov-node">OpenVINO BGE 向量化</div>
+
+    <div class="arrow-v"><svg width="12" height="16"><path d="M6 0 L6 10 M3 7 L6 13 L9 7" stroke="#555" stroke-width="1.2" fill="none"/></svg></div>
+
+    <!-- Stage 1 -->
+    <div class="subgraph stage1">
+      <span class="subgraph-label">第一阶段：向量粗排</span>
+      <div class="row">
+        <div class="node">全量 Schema 向量匹配</div>
+        <svg width="20" height="12"><path d="M0 6 L16 6 M10 3 L17 6 L10 9" stroke="#555" stroke-width="1.2" fill="none"/></svg>
+        <div class="node">召回 Top-12 候选表</div>
+      </div>
+    </div>
+
+    <div class="arrow-v"><svg width="12" height="16"><path d="M6 0 L6 10 M3 7 L6 13 L9 7" stroke="#555" stroke-width="1.2" fill="none"/></svg></div>
+
+    <!-- Stage 2 -->
+    <div class="subgraph stage2">
+      <span class="subgraph-label">第二阶段：语义精排与增强</span>
+      <div class="row">
+        <div class="node">LLM 语义相关性评分</div>
+        <svg width="20" height="12"><path d="M0 6 L16 6 M10 3 L17 6 L10 9" stroke="#555" stroke-width="1.2" fill="none"/></svg>
+        <div class="node">外键依赖自动补全</div>
+        <svg width="20" height="12"><path d="M0 6 L16 6 M10 3 L17 6 L10 9" stroke="#555" stroke-width="1.2" fill="none"/></svg>
+        <div class="node">核心 3-6 张目标表</div>
+      </div>
+    </div>
+
+    <div class="arrow-v"><svg width="12" height="16"><path d="M6 0 L6 10 M3 7 L6 13 L9 7" stroke="#555" stroke-width="1.2" fill="none"/></svg></div>
+
+    <!-- KECA -->
+    <div class="subgraph keca">
+      <span class="subgraph-label">KECA 知识注入</span>
+      <div class="keca-layout">
+        <div class="node db-node">prompt_config.json 知识库</div>
+        <svg width="20" height="12"><path d="M0 6 L16 6 M10 3 L17 6 L10 9" stroke="#888" stroke-width="1.2" fill="none"/></svg>
+        <div class="keca-right">
+          <div class="node keca-node">关键词 &amp; Jieba 术语匹配</div>
+          <div class="arrow-v"><svg width="12" height="14"><path d="M6 0 L6 9 M3 6 L6 12 L9 6" stroke="#7d3c98" stroke-width="1.2" fill="none"/></svg></div>
+          <div class="node keca-node">业务规则 &amp; SQL 表达式注入</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-v"><svg width="12" height="16"><path d="M6 0 L6 10 M3 7 L6 13 L9 7" stroke="#555" stroke-width="1.2" fill="none"/></svg></div>
+
+    <!-- Final row -->
+    <div class="final-row">
+      <div class="node prompt-node">最终增强型 Prompt</div>
+      <svg width="20" height="12"><path d="M0 6 L16 6 M10 3 L17 6 L10 9" stroke="#555" stroke-width="1.2" fill="none"/></svg>
+      <div class="node final-node">云端/本地 模型推理</div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

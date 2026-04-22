@@ -19,15 +19,6 @@ from .models import (
     SectionType
 )
 
-from .models import (
-    Interaction,
-    ContextItem,
-    SessionContext,
-    ContextConfig,
-    ContextType,
-    SectionType
-)
-
 from .context_manager import ContextManager
 from .memory_store import MemoryStore
 from .context_filter import ContextFilter

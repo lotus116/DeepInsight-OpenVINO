@@ -1,1 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env.local
+venv/
+env/
+
+# Runtime data (auto-generated)
+data/agent.log
+data/history.json
+data/click_history.json
+data/performance_metrics.json
+data/recommendation_cache.json
+data/saved_filters.json
+data/anomaly_history.json
+streamlit_context_memory.db
+
+# Evaluation results (large, regenerable)
+eval_suite/results/
+eval_suite/test_output.txt
+eval_suite/token_test_result.json
+
+# Exports (user-generated)
+data/exports/
+
+# Legacy
 VISUALIZATION_FIX_SUMMARY.md

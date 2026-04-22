@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>图 4-2 Agent 错误感知重试与深度推理流程图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f8fafc;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .page {
+    width: 800px;
+    background: #ffffff;
+    padding: 30px 20px 26px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    border-radius: 8px;
+  }
+  svg { 
+    display: block; 
+    margin: 0 auto; 
+    overflow: visible; 
+  }
+  
+  /* ---- 文本样式 ---- */
+  text {
+    /* font-family: "Times New Roman", "SimSun", serif; */
+    text-anchor: middle;
+    dominant-baseline: central;
+    font-size: 12.5px;
+  }
+  .title-bold { font-size: 14px; font-weight: bold; }
+  .small-text { font-size: 9px; fill: #64748b; }
+
+  /* 文字防遮挡光晕特效 (Halo Effect) */
+  .halo {
+    stroke: #ffffff;
+    stroke-width: 6px;
+    stroke-linejoin: round;
+    fill: none;
+    opacity: 0.95;
+  }
+  .label-text { font-size: 12.5px; font-weight: bold; }
+
+  /* 标题格式 */
+  .fig-caption { text-align: center; margin-top: 0px; line-height: 1.6; }
+  .fig-zh { font-size: 15px; font-weight: bold; display: block; color: #0f172a; }
+  .fig-en { font-size: 13.5px; font-style: italic; color: #475569; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="fig-caption">
+  <span class="fig-zh">图 4-2 Agent 错误感知重试与深度推理流程图</span>
+  <span class="fig-en">Figure 4-2 Agent error-aware retry and deep reasoning flowchart</span>
+</div>
+
+<svg width="700" height="500" viewBox="0 0 700 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.04"/>
+    </filter>
+
+    <marker id="arr-gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#475569"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#16a34a"/>
+    </marker>
+    <marker id="arr-red" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#dc2626"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#d97706"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#7e22ce"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <line x1="260" y1="80" x2="260" y2="120" stroke="#475569" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+  <line x1="260" y1="170" x2="260" y2="220" stroke="#475569" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+  <line x1="260" y1="270" x2="260" y2="320" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  
+  <line x1="350" y1="245" x2="480" y2="245" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arr-red)"/>
+  
+  <line x1="575" y1="270" x2="575" y2="315" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+  
+  <path d="M 670 245 L 705 245 Q 715 245 715 255 L 715 405 Q 715 415 705 415 L 670 415" 
+        fill="none" stroke="#7e22ce" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+
+  <path d="M 480 340 L 420 340 Q 410 340 410 330 L 410 155 Q 410 150 400 145 L 350 145" 
+        fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-orange)"/>
+
+  <path d="M 480 405 L 60 405 Q 50 405 50 395 L 50 150 Q 50 145 60 145 L 170 145" 
+        fill="none" stroke="#7e22ce" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-purple)"/>
+
+  <line x1="480" y1="430" x2="335" y2="430" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-red)"/>
+
+  <path d="M 185 340 L 95 340 Q 85 340 85 330 L 85 60 Q 85 50 95 50 L 185 50" 
+        fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arr-blue)"/>
+
+
+  <g transform="translate(185, 30)">
+    <ellipse cx="75" cy="25" rx="75" ry="25" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="75" y="18" class="title-bold" fill="#1e3a8a">IDLE</text>
+    <text x="75" y="34" font-size="11px" fill="#2563eb">(等待查询/Reset)</text>
+  </g>
+
+  <g transform="translate(170, 120)">
+    <rect width="180" height="50" rx="4" fill="#fffbeb" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="90" y="16" class="title-bold" fill="#92400e">SQL_GENERATION</text>
+    <text x="90" y="35" font-size="11px" fill="#b45309">SQL 生成 (Attempt: n)</text>
+  </g>
+
+  <g transform="translate(170, 220)">
+    <rect width="180" height="50" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="90" y="20" class="title-bold" fill="#14532d">SQL_EXECUTION</text>
+    <text x="90" y="35" font-size="11px" fill="#15803d">执行 SQL 并校验结果</text>
+  </g>
+
+  <g transform="translate(185, 320)">
+    <rect width="150" height="40" rx="20" fill="#16a34a" stroke="#14532d" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="75" y="15" class="title-bold" fill="#ffffff">SUCCEEDED</text>
+    <text x="75" y="28" font-size="11px" fill="#dcfce7">返回结果 &amp; 可视化</text>
+  </g>
+
+  <g transform="translate(185, 410)">
+    <rect width="150" height="40" rx="20" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="75" y="20" class="title-bold" fill="#ffffff">FAILED (中止)</text>
+  </g>
+
+  <g transform="translate(480, 220)">
+    <rect width="190" height="50" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="95" y="20" class="title-bold" fill="#7f1d1d">ERROR_ANALYSIS</text>
+    <text x="95" y="35" font-size="11px" fill="#b91c1c">错误分类与修复策略生成</text>
+  </g>
+
+  <g transform="translate(480, 315)">
+    <rect width="190" height="50" rx="4" fill="#fff7ed" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="95" y="20" class="title-bold" fill="#9a3412">SELF_HEALING</text>
+    <text x="95" y="35" font-size="11px" fill="#c2410c">构建修复 Prompt（重试阶段）</text>
+  </g>
+
+  <g transform="translate(480, 390)">
+    <rect width="190" height="50" rx="4" fill="#faf5ff" stroke="#7e22ce" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="95" y="20" class="title-bold" fill="#4c1d95">DEEP_REASONING</text>
+    <text x="95" y="35" font-size="11px" fill="#6b21a8">配置允许时启用 Reasoner</text>
+  </g>
+  
+
+  <g transform="translate(260, 100)">
+    <text class="halo">用户提交查询</text>
+    <text class="label-text" fill="#334155">用户提交查询</text>
+  </g>
+  <g transform="translate(260, 195)">
+    <text class="halo">生成 SQL</text>
+    <text class="label-text" fill="#334155">生成 SQL</text>
+  </g>
+  <g transform="translate(260, 295)">
+    <text class="halo">执行成功</text>
+    <text class="label-text" fill="#16a34a">执行成功</text>
+  </g>
+
+  <g transform="translate(415, 245)">
+    <text class="halo">执行报错</text>
+    <text class="label-text" fill="#dc2626">执行报错</text>
+  </g>
+  <g transform="translate(575, 292)">
+    <text class="halo">继续重试</text>
+    <text class="label-text" fill="#d97706">继续重试</text>
+  </g>
+  <g transform="translate(405, 430)">
+    <text class="halo">重试耗尽</text>
+    <text class="label-text" fill="#dc2626">重试耗尽</text>
+  </g>
+
+  <g transform="translate(410, 190)">
+    <text class="halo">构造重试 Prompt</text>
+    <text class="label-text" fill="#d97706">构造重试 Prompt</text>
+  </g>
+
+  <g transform="translate(715, 320) rotate(90)">
+    <text class="halo">配置允许</text>
+    <text class="label-text" fill="#7e22ce">配置允许</text>
+  </g>
+  
+  <g transform="translate(50, 280) rotate(-90)">
+    <text class="halo">可选深推路径</text>
+    <text class="label-text" fill="#7e22ce">可选深推路径</text>
+  </g>
+
+  <g transform="translate(85, 200) rotate(-90)">
+    <text class="halo">新查询 / 重置状态</text>
+    <text class="label-text" fill="#2563eb">新查询 / 重置状态</text>
+  </g>
+
+
+  <g transform="translate(520, 28)">
+    <rect width="180" height="110" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="90" y="20" class="title-bold" fill="#0f172a">图例 (Legend)</text>
+    
+    <line x1="15" y1="45" x2="45" y2="45" stroke="#475569" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+    <text x="100" y="46" text-anchor="start" font-size="11.5px" fill="#334155">正常状态转移</text>
+
+    <line x1="15" y1="63" x2="45" y2="63" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-orange)"/>
+    <text x="100" y="64" text-anchor="start" font-size="11.5px" fill="#334155">重试循环路径</text>
+
+    <line x1="15" y1="81" x2="45" y2="81" stroke="#7e22ce" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-purple)"/>
+    <text x="100" y="82" text-anchor="start" font-size="11.5px" fill="#334155">深度推理路径</text>
+
+    <line x1="15" y1="99" x2="45" y2="99" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+    <text x="100" y="100" text-anchor="start" font-size="11.5px" fill="#334155">执行成功路径</text>
+  </g>
+
+</svg>
+
+
+
+</div>
+</body>
+</html>
