@@ -29,6 +29,10 @@ class MemoryStore:
         """
         self.db_path = db_path
         self._init_database()
+        
+        # 性能统计
+        self._retrieval_times = []  # 记录检索时间
+        self._last_cleanup = None   # 最后清理时间
     
     def _init_database(self) -> None:
         """初始化数据库表结构"""
@@ -149,6 +153,9 @@ class MemoryStore:
             交互记录列表
         """
         try:
+            import time
+            start_time = time.perf_counter()
+            
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
@@ -179,6 +186,12 @@ class MemoryStore:
                         metadata=json.loads(row[6]) if row[6] else {}
                     )
                     interactions.append(interaction)
+                
+                # 记录检索时间
+                retrieval_time = (time.perf_counter() - start_time) * 1000  # 毫秒
+                self._retrieval_times.append(retrieval_time)
+                if len(self._retrieval_times) > 100:
+                    self._retrieval_times = self._retrieval_times[-100:]
                 
                 return interactions
                 
@@ -439,6 +452,10 @@ class MemoryStore:
                 conn.commit()
                 
                 total_deleted = context_deleted + interactions_deleted + sessions_deleted
+                
+                # 记录最后清理时间
+                self._last_cleanup = datetime.now()
+                
                 return total_deleted
                 
         except sqlite3.Error as e:
@@ -469,14 +486,17 @@ class MemoryStore:
                 db_file = Path(self.db_path)
                 storage_size_mb = db_file.stat().st_size / (1024 * 1024) if db_file.exists() else 0.0
                 
+                # 计算平均检索时间
+                avg_retrieval_time = sum(self._retrieval_times) / len(self._retrieval_times) if self._retrieval_times else 0.0
+                
                 stats = StorageStats(
                     total_sessions=total_sessions,
                     total_interactions=total_interactions,
                     total_context_items=total_context_items,
                     storage_size_mb=round(storage_size_mb, 2),
-                    avg_retrieval_time_ms=0.0,  # 需要实际测量
-                    cache_hit_rate=0.0,  # 暂未实现缓存
-                    last_cleanup=None  # 需要记录最后清理时间
+                    avg_retrieval_time_ms=round(avg_retrieval_time, 2),
+                    cache_hit_rate=0.0,  # 缓存命中率由 ContextManager 追踪
+                    last_cleanup=self._last_cleanup
                 )
                 
                 return stats

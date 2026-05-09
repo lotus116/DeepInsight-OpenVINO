@@ -1,0 +1,290 @@
+{
+  "business_context": {
+    "industry_terms": "自行车制造、零售销售、B2B客户、生产制造、供应链管理、库存管理、客户关系、销售区域、员工绩效、产品线管理",
+    "business_rules": "关注自行车及配件的销售趋势，分析产品线（山地车、公路车、旅行车）表现，监控库存周转率，评估销售区域业绩，跟踪生产工单状态，管理供应商关系，分析客户购买行为",
+    "data_characteristics": "包含产品(product)、产品类别(productcategory/productsubcategory)、客户(customer)、销售订单(salesorderheader/salesorderdetail)、销售人员(salesperson)、销售区域(salesterritory)、员工(employee)、部门(department)、供应商(vendor)、采购订单(purchaseorderheader/purchaseorderdetail)、库存(productinventory)、生产工单(workorder)等核心业务数据，支持完整的制造-销售-服务业务链分析",
+    "analysis_focus": "产品销售分析、客户价值分析、销售区域分析、员工绩效分析、库存周转分析、生产效率分析、供应商管理分析"
+  },
+  "example_queries": [
+    {
+      "query": "查看销售额最高的产品",
+      "category": "产品分析",
+      "sql_pattern": "SELECT p.Name AS ProductName, SUM(od.LineTotal) AS TotalSales FROM product p JOIN salesorderdetail od ON p.ProductID = od.ProductID GROUP BY p.ProductID, p.Name ORDER BY TotalSales DESC LIMIT 10",
+      "description": "分析产品销售排名，识别畅销产品"
+    },
+    {
+      "query": "各产品类别的销售情况",
+      "category": "类别分析",
+      "sql_pattern": "SELECT pc.Name AS Category, ps.Name AS SubCategory, SUM(od.LineTotal) AS TotalSales FROM productcategory pc JOIN productsubcategory ps ON pc.ProductCategoryID = ps.ProductCategoryID JOIN product p ON ps.ProductSubcategoryID = p.ProductSubcategoryID JOIN salesorderdetail od ON p.ProductID = od.ProductID GROUP BY pc.ProductCategoryID, pc.Name, ps.ProductSubcategoryID, ps.Name ORDER BY TotalSales DESC",
+      "description": "按产品类别和子类别分析销售额"
+    },
+    {
+      "query": "销售金额最高的客户",
+      "category": "客户分析",
+      "sql_pattern": "SELECT c.CustomerID, st.Name AS StoreName, SUM(o.TotalDue) AS TotalAmount FROM customer c LEFT JOIN store st ON c.StoreID = st.BusinessEntityID JOIN salesorderheader o ON c.CustomerID = o.CustomerID GROUP BY c.CustomerID, st.Name ORDER BY TotalAmount DESC LIMIT 10",
+      "description": "分析高价值客户，了解主要客户来源"
+    },
+    {
+      "query": "各区域销售业绩",
+      "category": "区域分析",
+      "sql_pattern": "SELECT t.Name AS Territory, t.CountryRegionCode, SUM(o.TotalDue) AS TotalSales, COUNT(o.SalesOrderID) AS OrderCount FROM salesterritory t JOIN salesorderheader o ON t.TerritoryID = o.TerritoryID GROUP BY t.TerritoryID, t.Name, t.CountryRegionCode ORDER BY TotalSales DESC",
+      "description": "分析各销售区域的业绩表现"
+    },
+    {
+      "query": "库存不足需要补货的产品",
+      "category": "库存分析",
+      "sql_pattern": "SELECT p.Name AS ProductName, pi.Quantity AS CurrentStock, p.ReorderPoint, p.SafetyStockLevel FROM product p JOIN productinventory pi ON p.ProductID = pi.ProductID WHERE pi.Quantity < p.ReorderPoint ORDER BY (p.ReorderPoint - pi.Quantity) DESC",
+      "description": "识别库存低于再订购点的产品"
+    },
+    {
+      "query": "供应商采购统计",
+      "category": "采购分析",
+      "sql_pattern": "SELECT v.Name AS VendorName, COUNT(po.PurchaseOrderID) AS OrderCount, SUM(po.TotalDue) AS TotalAmount FROM vendor v JOIN purchaseorderheader po ON v.VendorID = po.VendorID GROUP BY v.VendorID, v.Name ORDER BY TotalAmount DESC LIMIT 10",
+      "description": "分析各供应商的采购量和采购金额"
+    },
+    {
+      "query": "对比各年度销售额变化",
+      "category": "年度对比分析",
+      "sql_pattern": "WITH YearlySales AS (SELECT YEAR(OrderDate) AS SalesYear, SUM(TotalDue) AS TotalSales FROM salesorderheader GROUP BY YEAR(OrderDate)) SELECT y1.SalesYear, y1.TotalSales, y2.TotalSales AS PreviousYearSales, ROUND((y1.TotalSales - COALESCE(y2.TotalSales, 0)) / NULLIF(y2.TotalSales, 0) * 100, 2) AS GrowthRate FROM YearlySales y1 LEFT JOIN YearlySales y2 ON y1.SalesYear = y2.SalesYear + 1 ORDER BY y1.SalesYear",
+      "description": "使用 CTE 对比各年度销售额，计算同比增长率"
+    },
+    {
+      "query": "客户价值分层分析",
+      "category": "RFM分析",
+      "sql_pattern": "WITH CustomerMetrics AS (SELECT c.CustomerID, COUNT(o.SalesOrderID) AS OrderCount, SUM(o.TotalDue) AS TotalSpend, MAX(o.OrderDate) AS LastOrderDate FROM customer c JOIN salesorderheader o ON c.CustomerID = o.CustomerID GROUP BY c.CustomerID) SELECT CustomerID, OrderCount, TotalSpend, LastOrderDate, CASE WHEN TotalSpend > 10000 THEN 'VIP' WHEN TotalSpend > 5000 THEN 'Regular' ELSE 'Occasional' END AS CustomerTier FROM CustomerMetrics ORDER BY TotalSpend DESC",
+      "description": "使用 CTE 进行客户价值分层，支持 RFM 分析"
+    },
+    {
+      "query": "产品销售增长趋势",
+      "category": "增长分析",
+      "sql_pattern": "WITH MonthlySales AS (SELECT p.ProductID, p.Name AS ProductName, DATE_FORMAT(o.OrderDate, '%Y-%m') AS SalesMonth, SUM(od.LineTotal) AS MonthlyTotal FROM product p JOIN salesorderdetail od ON p.ProductID = od.ProductID JOIN salesorderheader o ON od.SalesOrderID = o.SalesOrderID GROUP BY p.ProductID, p.Name, DATE_FORMAT(o.OrderDate, '%Y-%m')) SELECT ProductID, ProductName, SalesMonth, MonthlyTotal FROM MonthlySales ORDER BY ProductID, SalesMonth",
+      "description": "使用 CTE 分析产品月度销售趋势"
+    },
+    {
+      "query": "计算各产品类别销售额占总销售额的百分比",
+      "category": "占比分析",
+      "sql_pattern": "SELECT pc.Name AS Category, SUM(od.LineTotal) AS CategorySales, SUM(od.LineTotal) / (SELECT SUM(LineTotal) FROM salesorderdetail) * 100 AS Percentage FROM productcategory pc JOIN productsubcategory ps ON pc.ProductCategoryID = ps.ProductCategoryID JOIN product p ON ps.ProductSubcategoryID = p.ProductSubcategoryID JOIN salesorderdetail od ON p.ProductID = od.ProductID GROUP BY pc.ProductCategoryID, pc.Name ORDER BY Percentage DESC",
+      "description": "使用子查询计算总额，外层相除得到各类别占比"
+    },
+    {
+      "query": "查询每个类别中价格最高的产品",
+      "category": "分组极值分析",
+      "sql_pattern": "SELECT pc.Name AS Category, p.Name AS Product, p.ListPrice FROM productcategory pc JOIN productsubcategory ps ON pc.ProductCategoryID = ps.ProductCategoryID JOIN product p ON ps.ProductSubcategoryID = p.ProductSubcategoryID WHERE p.ListPrice = (SELECT MAX(p2.ListPrice) FROM product p2 JOIN productsubcategory ps2 ON p2.ProductSubcategoryID = ps2.ProductSubcategoryID WHERE ps2.ProductCategoryID = ps.ProductCategoryID)",
+      "description": "使用相关子查询查找每个分组中的最大值记录"
+    }
+  ],
+  "term_dictionary_path": "",
+  "term_dictionary": {
+    "订单金额": {
+      "explanation": "订单的总金额，包含商品价格、税费和运费等",
+      "required_tables": [
+        "salesorderheader",
+        "salesorderdetail"
+      ]
+    },
+    "产品类别": {
+      "explanation": "产品的分类体系，AdventureWorks 有自行车、组件、服装、配件四大类",
+      "required_tables": [
+        "productcategory",
+        "productsubcategory"
+      ]
+    },
+    "库存管理": {
+      "explanation": "跟踪产品库存水平，包括当前库存、安全库存和再订购点等指标",
+      "required_tables": [
+        "productinventory",
+        "product"
+      ]
+    },
+    "销售区域": {
+      "explanation": "按地理位置划分的销售区域，用于分析区域销售业绩",
+      "required_tables": [
+        "salesterritory"
+      ]
+    },
+    "产品成本与定价": {
+      "explanation": "产品的制造成本和销售价格，用于利润分析",
+      "required_tables": [
+        "product"
+      ]
+    },
+    "销售订单": {
+      "explanation": "客户订单信息，包含订单头信息和订单明细",
+      "required_tables": [
+        "salesorderheader",
+        "salesorderdetail"
+      ]
+    },
+    "采购订单": {
+      "explanation": "向供应商的采购订单，包含采购头信息和采购明细",
+      "required_tables": [
+        "purchaseorderheader",
+        "purchaseorderdetail"
+      ]
+    },
+    "供应商管理": {
+      "explanation": "供应商信息及其供货关系",
+      "required_tables": [
+        "vendor",
+        "productvendor"
+      ]
+    },
+    "客户管理": {
+      "explanation": "客户信息，包括个人客户和企业客户",
+      "required_tables": [
+        "customer"
+      ]
+    },
+    "生产工单": {
+      "explanation": "生产制造的工单信息，跟踪制造进度和完成情况",
+      "required_tables": [
+        "workorder"
+      ]
+    },
+    "员工部门": {
+      "explanation": "员工和部门组织架构信息",
+      "required_tables": [
+        "employee",
+        "department",
+        "employeedepartmenthistory"
+      ]
+    },
+    "占比计算": {
+      "explanation": "计算某部分占总体的百分比。使用子查询 SUM(col) / (SELECT SUM(col) FROM table) * 100 获取总额，外层相除得到占比。子查询要与外层使用相同的基表",
+      "sql_pattern": "SUM(column) / (SELECT SUM(column) FROM table) * 100 AS Percentage",
+      "required_tables": [
+        "salesorderdetail"
+      ]
+    },
+    "分组内极值": {
+      "explanation": "查找每个分组中某列取最大或最小值的记录。使用相关子查询 WHERE col = (SELECT MAX/MIN(col) FROM table WHERE 关联条件) 或窗口函数 ROW_NUMBER() OVER (PARTITION BY ...) = 1",
+      "sql_pattern": "WHERE column = (SELECT MAX(column) FROM table t2 WHERE t2.group_col = t1.group_col)",
+      "required_tables": [
+        "product",
+        "productsubcategory",
+        "productcategory"
+      ]
+    },
+    "产品层级结构": {
+      "explanation": "AdventureWorks 产品分类是三层结构：ProductCategory (大类，如 Bikes/Components/Clothing/Accessories) → ProductSubcategory (子类) → Product (产品)。查询产品类别信息必须按此层级 JOIN",
+      "join_pattern": "productcategory pc JOIN productsubcategory ps ON pc.ProductCategoryID = ps.ProductCategoryID JOIN product p ON ps.ProductSubcategoryID = p.ProductSubcategoryID",
+      "required_tables": [
+        "productcategory",
+        "productsubcategory",
+        "product"
+      ]
+    },
+    "表连接语义选择": {
+      "keywords": [
+        "有订单的",
+        "有记录的",
+        "有采购",
+        "实际发生",
+        "所有的",
+        "全部的",
+        "包含空值",
+        "即使没有"
+      ],
+      "explanation": "当问题要求'有记录的'、'实际发生的'、'存在关联的'数据时，使用 INNER JOIN 过滤无关联记录。当问题要求'所有的'、'包含空值'、'即使没有也显示'时，使用 LEFT JOIN 保留无关联记录",
+      "sql_pattern": "INNER JOIN 过滤无关联 | LEFT JOIN 保留全部",
+      "examples": [
+        {
+          "scenario": "有采购记录的供应商",
+          "use": "INNER JOIN"
+        },
+        {
+          "scenario": "所有供应商(含无采购)",
+          "use": "LEFT JOIN"
+        }
+      ]
+    },
+    "TOP N 查询模式": {
+      "keywords": [
+        "前10",
+        "前5",
+        "前20",
+        "前3",
+        "最高的",
+        "排名前",
+        "TOP",
+        "名客户",
+        "名产品",
+        "名供应商"
+      ],
+      "explanation": "当问题包含'前N名'、'排名前N'、'最高的N个'时，需要使用 ORDER BY 排序后加 LIMIT N。注意先排序再限制",
+      "sql_pattern": "ORDER BY column DESC LIMIT N",
+      "examples": [
+        {
+          "scenario": "销售额最高的前10名",
+          "use": "ORDER BY TotalSales DESC LIMIT 10"
+        }
+      ]
+    },
+    "HAVING 过滤条件": {
+      "keywords": [
+        "超过",
+        "大于",
+        "多于",
+        ">=5",
+        ">5",
+        ">=10",
+        ">10",
+        "次以上",
+        "个以上"
+      ],
+      "explanation": "当问题要求'超过N次的'、'大于N个的'等对聚合结果的过滤时，使用 HAVING 子句而非 WHERE。HAVING 在 GROUP BY 之后执行",
+      "sql_pattern": "GROUP BY ... HAVING COUNT(*) > N",
+      "examples": [
+        {
+          "scenario": "采购次数超过5次的",
+          "use": "HAVING COUNT(*) > 5"
+        },
+        {
+          "scenario": "销售额大于10000的",
+          "use": "HAVING SUM(amount) > 10000"
+        }
+      ]
+    },
+    "日期分组格式": {
+      "keywords": [
+        "按年月",
+        "年和月",
+        "分开显示",
+        "YYYY-MM",
+        "每月",
+        "月度"
+      ],
+      "explanation": "按年月分组时，如需分开显示使用 YEAR(date) 和 MONTH(date) 作为两列；如需合并使用 DATE_FORMAT(date, '%Y-%m')。根据问题要求选择",
+      "sql_pattern": "YEAR(date), MONTH(date) | DATE_FORMAT(date, '%Y-%m')"
+    },
+    "销售金额字段": {
+      "keywords": [
+        "销售额",
+        "订单总额",
+        "订单金额",
+        "销售总额",
+        "年度销售",
+        "月度销售"
+      ],
+      "explanation": "AdventureWorks 中销售订单总额使用 TotalDue 字段(含税费)，SubTotal 不含税费和运费。统计销售额应使用 TotalDue",
+      "sql_pattern": "SUM(salesorderheader.TotalDue) AS TotalSales",
+      "required_tables": [
+        "salesorderheader"
+      ]
+    },
+    "隐式关联过滤": {
+      "keywords": [
+        "有产品的",
+        "有销售的",
+        "有评论的",
+        "购买过",
+        "供应过",
+        "及其"
+      ],
+      "explanation": "当问题暗示必须存在关联记录时(如'有产品的类别'、'购买过X的客户')，应使用 INNER JOIN 而非 LEFT JOIN，自动过滤无关联的记录",
+      "sql_pattern": "INNER JOIN table ON condition"
+    }
+  },
+  "example_query_threshold": 0.15,
+  "last_updated": 1770455832.5713897
+}

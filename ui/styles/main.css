@@ -1,0 +1,586 @@
+/*
+ * Intel® DeepInsight - 主样式文件
+ * 现代化UI设计 - 优化版 v2.0
+ */
+
+/* ============================================ */
+/* CSS变量 - 统一管理配色和间距 */
+/* ============================================ */
+:root {
+    /* 主色调 */
+    --primary: #0068B5;
+    --primary-dark: #005696;
+    --primary-light: #e8f4fc;
+    --primary-glow: rgba(0, 104, 181, 0.15);
+
+    /* 辅助色 */
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
+
+    /* 中性色 */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+
+    /* 阴影层次 */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 10px 10px rgba(0, 0, 0, 0.04);
+    --shadow-primary: 0 4px 14px rgba(0, 104, 181, 0.25);
+    --shadow-primary-lg: 0 8px 25px rgba(0, 104, 181, 0.3);
+
+    /* 圆角 */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* 过渡动画 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.35s ease;
+    --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================ */
+/* 全局样式 */
+/* ============================================ */
+.stApp {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, #eef2f7 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 主内容区域优化 */
+.main .block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 3rem !important;
+    max-width: 1200px !important;
+}
+
+/* 隐藏默认菜单和页脚，但保留侧边栏控制 */
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+/* 隐藏顶部装饰栏，但保留侧边栏展开按钮 */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    border-bottom: none !important;
+}
+
+/* 保留侧边栏展开/收起按钮可见 */
+[data-testid="collapsedControl"] {
+    visibility: visible !important;
+    z-index: 999999 !important;
+}
+
+/* ============================================ */
+/* 聊天界面样式 */
+/* ============================================ */
+.stChatMessage {
+    padding: 1.5rem 1.75rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+    transition: all var(--transition-normal);
+    position: relative;
+}
+
+.stChatMessage::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--info) 100%);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.stChatMessage:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-color: var(--border);
+}
+
+.stChatMessage:hover::before {
+    opacity: 1;
+}
+
+/* 用户消息样式 */
+div[data-testid="stChatMessage"][data-testid-user-avatar="true"] {
+    background: linear-gradient(135deg, #fafbff 0%, var(--primary-light) 100%);
+    border-color: rgba(0, 104, 181, 0.1);
+}
+
+/* 标题样式增强 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+}
+
+h1 {
+    background: linear-gradient(135deg, var(--primary) 0%, #0891b2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+h5 {
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 24px !important;
+    margin-bottom: 16px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.01em;
+}
+
+h5::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 1.2em;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--info) 100%);
+    border-radius: 2px;
+    margin-right: 4px;
+}
+
+/* ============================================ */
+/* 上下文记忆状态指示器 */
+/* ============================================ */
+.context-status {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--success-light) 100%);
+    padding: 14px 20px;
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--success);
+    margin: 20px 0;
+    font-size: 0.9em;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all var(--transition-normal);
+}
+
+.context-status:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.context-disabled {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--warning-light) 100%);
+    border-left-color: var(--warning);
+}
+
+/* ============================================ */
+/* 思维链样式 */
+/* ============================================ */
+.thought-persist {
+    background: linear-gradient(135deg, #f8fbff 0%, var(--primary-light) 100%);
+    padding: 18px 24px;
+    border-radius: var(--radius-md);
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+    font-size: 0.85em;
+    border-left: 4px solid var(--primary);
+    margin-bottom: 24px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.thought-persist::after {
+    content: '💭';
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 1.5em;
+    opacity: 0.3;
+}
+
+/* ============================================ */
+/* 按钮样式优化 */
+/* ============================================ */
+button {
+    border-radius: var(--radius-md) !important;
+    transition: all var(--transition-normal) !important;
+    font-weight: 500 !important;
+    position: relative;
+    overflow: hidden;
+}
+
+button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+button:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* 主要按钮 - 渐变增强 */
+button[kind="primary"] {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, #004d80 100%) !important;
+    background-size: 200% 200% !important;
+    animation: gradientShift 3s ease infinite !important;
+    border: none !important;
+    box-shadow: var(--shadow-primary) !important;
+    color: white !important;
+}
+
+button[kind="primary"]:hover {
+    box-shadow: var(--shadow-primary-lg) !important;
+    transform: translateY(-2px);
+    animation-duration: 1.5s !important;
+}
+
+@keyframes gradientShift {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* 次要按钮 - 推荐问题卡片 */
+section.main div[data-testid="column"] button {
+    height: auto !important;
+    min-height: 90px !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1.5 !important;
+    padding: 18px 16px !important;
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+    border-radius: var(--radius-lg) !important;
+    color: var(--text-primary) !important;
+    transition: all var(--transition-bounce) !important;
+}
+
+section.main div[data-testid="column"] button:hover {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    background: linear-gradient(135deg, white 0%, var(--primary-light) 100%) !important;
+    transform: translateY(-4px) scale(1.02) !important;
+    box-shadow: var(--shadow-lg), 0 0 0 3px var(--primary-glow) !important;
+}
+
+/* ============================================ */
+/* 侧边栏样式 */
+/* ============================================ */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, #fafbfc 100%);
+    border-right: 1px solid var(--border-light);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
+}
+
+[data-testid="stSidebar"]>div:first-child {
+    padding-top: 1rem;
+}
+
+.monitor-box {
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, #edf2f7 100%);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    margin-top: 16px;
+    line-height: 1.8;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.metric-row:last-child {
+    border-bottom: none;
+}
+
+.metric-val {
+    font-weight: 600;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+/* ============================================ */
+/* 输入框样式 */
+/* ============================================ */
+.stChatInput {
+    padding-bottom: 20px !important;
+}
+
+.stChatInput [data-testid="stChatInputTextArea"] {
+    background-color: var(--bg-secondary) !important;
+    border-radius: var(--radius-full) !important;
+    border: 2px solid var(--border) !important;
+    box-shadow: var(--shadow-md) !important;
+    padding: 14px 20px !important;
+    transition: all var(--transition-normal);
+}
+
+.stChatInput [data-testid="stChatInputTextArea"]:focus-within {
+    border-color: var(--primary) !important;
+    box-shadow: var(--shadow-lg), 0 0 0 4px var(--primary-glow) !important;
+}
+
+/* ============================================ */
+/* 表格样式 */
+/* ============================================ */
+.dataframe {
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.dataframe th {
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, #e2e8f0 100%) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    padding: 14px 16px !important;
+    border-bottom: 2px solid var(--primary) !important;
+}
+
+.dataframe td {
+    padding: 12px 16px !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-light) !important;
+}
+
+.dataframe tbody tr {
+    transition: background var(--transition-fast);
+}
+
+.dataframe tbody tr:hover {
+    background: linear-gradient(90deg, var(--primary-light) 0%, transparent 100%) !important;
+}
+
+/* ============================================ */
+/* Expander 样式 */
+/* ============================================ */
+.streamlit-expanderHeader {
+    background: var(--bg-secondary) !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border) !important;
+    padding: 14px 18px !important;
+    font-weight: 500 !important;
+    transition: all var(--transition-normal) !important;
+}
+
+.streamlit-expanderHeader:hover {
+    background: linear-gradient(135deg, white 0%, var(--primary-light) 100%) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Expander 内容区域 */
+.streamlit-expanderContent {
+    border: 1px solid var(--border-light) !important;
+    border-top: none !important;
+    border-radius: 0 0 var(--radius-md) var(--radius-md) !important;
+    background: var(--bg-secondary) !important;
+}
+
+/* ============================================ */
+/* Metric 指标样式 */
+/* ============================================ */
+[data-testid="stMetric"] {
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-xs);
+    transition: all var(--transition-normal);
+}
+
+[data-testid="stMetric"]:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--border);
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stMetricDelta"] svg {
+    stroke: var(--success) !important;
+}
+
+/* ============================================ */
+/* 加载状态动画 */
+/* ============================================ */
+.stStatus>div {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-xl) !important;
+    border: none !important;
+    background: var(--bg-secondary) !important;
+}
+
+/* 进度条 */
+.stProgress>div>div {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--info) 100%) !important;
+    border-radius: var(--radius-full) !important;
+}
+
+/* ============================================ */
+/* 成功/警告/错误提示 */
+/* ============================================ */
+.stSuccess {
+    background: linear-gradient(135deg, var(--success-light) 0%, #a7f3d0 100%) !important;
+    border-left: 4px solid var(--success) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+.stWarning {
+    background: linear-gradient(135deg, var(--warning-light) 0%, #fde68a 100%) !important;
+    border-left: 4px solid var(--warning) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+.stError {
+    background: linear-gradient(135deg, var(--danger-light) 0%, #fecaca 100%) !important;
+    border-left: 4px solid var(--danger) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+.stInfo {
+    background: linear-gradient(135deg, var(--info-light) 0%, #bfdbfe 100%) !important;
+    border-left: 4px solid var(--info) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+/* ============================================ */
+/* 代码块样式 */
+/* ============================================ */
+.stCodeBlock {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* ============================================ */
+/* 响应式调整 */
+/* ============================================ */
+@media screen and (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        border-right: none !important;
+    }
+
+    .stChatMessage {
+        padding: 1rem;
+        margin-bottom: 16px;
+    }
+
+    section.main div[data-testid="column"] button {
+        min-height: 70px !important;
+        padding: 12px !important;
+    }
+}
+
+/* ============================================ */
+/* 动画关键帧 */
+/* ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* 应用动画 */
+.stChatMessage {
+    animation: fadeIn 0.4s ease-out;
+}
+
+[data-testid="stMetric"] {
+    animation: slideInLeft 0.3s ease-out;
+}

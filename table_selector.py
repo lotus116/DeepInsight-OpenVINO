@@ -85,6 +85,44 @@ class IntelligentTableSelector:
                 print(f"❌ [TableSelector] 加载schema失败 {schema_path}: {e}")
         
         print(f"📊 [TableSelector] 总共加载 {len(self.tables)} 个数据表")
+        
+        # 构建外键关系图
+        self._build_fk_graph()
+    
+    def _build_fk_graph(self):
+        """
+        构建外键关系图
+        
+        创建两个字典:
+        - fk_outgoing: 表 -> [它引用的表] (外键指向)
+        - fk_incoming: 表 -> [引用它的表] (被外键指向)
+        """
+        self.fk_outgoing = {}  # 表 -> [它引用的表]
+        self.fk_incoming = {}  # 表 -> [引用它的表]
+        
+        for table in self.tables:
+            table_name = table.get('table_name', '')
+            if table_name:
+                self.fk_outgoing[table_name] = []
+                if table_name not in self.fk_incoming:
+                    self.fk_incoming[table_name] = []
+            
+            foreign_keys = table.get('foreign_keys', [])
+            for fk in foreign_keys:
+                ref = fk.get('references', '')
+                if '.' in ref:
+                    ref_table = ref.split('.')[0]
+                    # 当前表引用 ref_table
+                    self.fk_outgoing[table_name].append(ref_table)
+                    # ref_table 被当前表引用
+                    if ref_table not in self.fk_incoming:
+                        self.fk_incoming[ref_table] = []
+                    self.fk_incoming[ref_table].append(table_name)
+        
+        # 统计 FK 关系
+        total_fks = sum(len(v) for v in self.fk_outgoing.values())
+        if total_fks > 0:
+            print(f"🔗 [TableSelector] 构建 FK 关系图: {total_fks} 个外键关系")
     
     def precompute_embeddings(self):
         """预计算所有表和列的向量表示"""
@@ -253,23 +291,34 @@ class IntelligentTableSelector:
         
         for word in query_words:
             if len(word) > 1 and word in table_text:
-                keyword_score += 0.1
+                keyword_score += 0.08  # 普通关键词权重 (降低避免短词过多匹配)
                 matched_keywords.append(word)
         
-        # 3. 列相关性 (权重: 15%)
-        relevant_columns = self.find_relevant_columns(query, table_name, top_k=3)
-        column_score = min(len(relevant_columns) * 0.05, 0.15)
+        # 业务概念匹配 (权重更高，因为更精确)
+        business_concepts = table.get('business_concepts', [])
+        for concept in business_concepts:
+            if concept in query_lower:
+                keyword_score += 0.15  # 业务概念权重 (精确匹配，但避免单概念过强)
+                matched_keywords.append(f"[概念]{concept}")
         
-        # 综合得分
+        # 3. 列相关性 (权重: 20%) - 列命中是强信号
+        relevant_columns = self.find_relevant_columns(query, table_name, top_k=5)
+        column_score = min(len(relevant_columns) * 0.06, 0.25)
+        
+        # 综合得分 (基于 Northwind 中文查询场景优化)
+        # 权重设计理念:
+        #   - 语义匹配 50%: 向量匹配有噪声，适当降低
+        #   - 关键词/概念 30%: 中文场景关键词很重要
+        #   - 列相关性 20%: 列命中是强信号
         if semantic_score > 0:
-            # 有语义匹配时使用原始权重
-            total_score = (semantic_score * 0.6 + 
-                          min(keyword_score, 0.25) * 0.25 + 
-                          column_score * 0.15) * 100
+            # 有语义匹配时的权重分配
+            total_score = (semantic_score * 0.50 + 
+                          min(keyword_score, 0.40) * 0.30 + 
+                          min(column_score, 0.25) * 0.20) * 100
         else:
-            # 无语义匹配时提高关键词和列匹配的权重
-            total_score = (min(keyword_score, 0.6) * 0.7 + 
-                          column_score * 0.3) * 100
+            # 无语义匹配时 (Baseline 模式) 提高关键词和列的权重
+            total_score = (min(keyword_score, 0.50) * 0.65 + 
+                          min(column_score, 0.25) * 0.35) * 100
         
         # 生成推理说明
         reasoning_parts = []
@@ -293,6 +342,38 @@ class IntelligentTableSelector:
             reasoning=reasoning
         )
     
+    def infer_related_tables(self, selected_tables: List[TableRelevance]) -> List[str]:
+        """
+        基于 FK 关系推断关联表
+        
+        对于已选中的表，检查它们的外键指向的表是否也需要包含
+        
+        Returns:
+            需要额外添加的关联表名称列表
+        """
+        if not hasattr(self, 'fk_outgoing') or not self.fk_outgoing:
+            return []
+        
+        selected_names = {t.table_name for t in selected_tables}
+        related_tables = set()
+        
+        for table in selected_tables:
+            table_name = table.table_name
+            
+            # 查找该表通过外键引用的表
+            for ref_table in self.fk_outgoing.get(table_name, []):
+                if ref_table not in selected_names:
+                    related_tables.add(ref_table)
+        
+        return list(related_tables)
+    
+    def _get_table_by_name(self, table_name: str) -> Optional[Dict]:
+        """根据表名获取表定义"""
+        for table in self.tables:
+            if table.get('table_name') == table_name:
+                return table
+        return None
+
     def select_tables(self, query: str, top_k: int = 5) -> Tuple[List[TableRelevance], Dict]:
         """智能选择相关表"""
         if not self.tables:
@@ -318,6 +399,26 @@ class IntelligentTableSelector:
         # 过滤掉得分过低的表
         selected_tables = [t for t in selected_tables if t.relevance_score > 1.0]
         
+        # 基于 FK 关系推断关联表
+        inferred_table_names = self.infer_related_tables(selected_tables)
+        for inferred_name in inferred_table_names:
+            # 检查是否已在选中列表中
+            if not any(t.table_name == inferred_name for t in selected_tables):
+                table_def = self._get_table_by_name(inferred_name)
+                if table_def:
+                    # 创建较低分数的 FK 推断表
+                    inferred_table = TableRelevance(
+                        table_name=inferred_name,
+                        table_description=table_def.get('table_description', ''),
+                        relevance_score=50.0,  # 较低分数表示 FK 推断
+                        semantic_similarity=0.0,
+                        keyword_matches=[],
+                        matched_columns=[],
+                        reasoning="通过 FK 关系推断 (JOIN 关联表)",
+                        is_join_required=True
+                    )
+                    selected_tables.append(inferred_table)
+        
         end_time = time.perf_counter()
         
         # 生成分析报告
@@ -326,6 +427,7 @@ class IntelligentTableSelector:
             "intent": intent,
             "total_tables": len(self.tables),
             "selected_count": len(selected_tables),
+            "inferred_by_fk": len(inferred_table_names),
             "processing_time_ms": (end_time - start_time) * 1000,
             "selection_reasoning": self._generate_selection_reasoning(selected_tables, intent),
             "use_semantic_matching": self.rag_engine is not None and self.table_embeddings is not None

@@ -22,4 +22,6 @@ pymupdf
 mkl
 mkl-service
 pymysql
-sqlalchemy
+jieba
+sqlparse
+cryptography

@@ -753,54 +753,11 @@ class ExportManager:
         return style_dict
     
     def _add_table_selection_info(self, story: List, table_info: Dict, style_dict: Dict):
-        """添加表选择过程信息到PDF"""
-        if not table_info or not any(table_info.values()):
-            return
-        
-        story.append(Paragraph("🗄️ 智能表选择过程", style_dict["heading4_style"]))
-        
-        # 初步分析
-        if table_info.get("initial_analysis"):
-            story.append(Paragraph("第1步: 语义相似度初步筛选", style_dict["heading4_style"]))
-            if hasattr(self, 'chinese_font_available') and self.chinese_font_available:
-                story.append(Paragraph(table_info["initial_analysis"], style_dict["table_info_style"]))
-            else:
-                story.append(Paragraph("[表选择分析 - 需要中文字体支持]", style_dict["table_info_style"]))
-        
-        # Agent推理
-        if table_info.get("agent_reasoning"):
-            story.append(Paragraph("第2步: Agent智能筛选推理", style_dict["heading4_style"]))
-            if hasattr(self, 'chinese_font_available') and self.chinese_font_available:
-                story.append(Paragraph(f"推理过程: {table_info['agent_reasoning']}", style_dict["table_info_style"]))
-            else:
-                story.append(Paragraph("[Agent推理过程 - 需要中文字体支持]", style_dict["table_info_style"]))
-        
-        # 关联分析
-        if table_info.get("join_analysis"):
-            story.append(Paragraph("第3步: 表关联关系分析", style_dict["heading4_style"]))
-            if hasattr(self, 'chinese_font_available') and self.chinese_font_available:
-                story.append(Paragraph(table_info["join_analysis"], style_dict["table_info_style"]))
-            else:
-                story.append(Paragraph("[关联分析 - 需要中文字体支持]", style_dict["table_info_style"]))
-        
-        # 最终选择结果
-        if table_info.get("final_selection"):
-            final_selection = table_info["final_selection"]
-            selected_tables = final_selection.get("selected_tables", [])
-            if selected_tables:
-                story.append(Paragraph("最终选择的表:", style_dict["heading4_style"]))
-                for table in selected_tables:
-                    table_name = table.get("table_name", "未知表")
-                    relevance_score = table.get("relevance_score", 0)
-                    reasoning = table.get("reasoning", "无推理信息")
-                    table_text = f"• {table_name} (相关度: {relevance_score:.2f}) - {reasoning}"
-                    if hasattr(self, 'chinese_font_available') and self.chinese_font_available:
-                        story.append(Paragraph(table_text, style_dict["normal_style"]))
-                    else:
-                        story.append(Paragraph(f"• {table_name} (Score: {relevance_score:.2f})", style_dict["normal_style"]))
-        
-        story.append(Spacer(1, 10))
+        """添加表选择过程信息到PDF - 已弃用：表选择功能已移除"""
+        # 表选择功能已被 RAG 语义增强替代，此方法保留以保持向后兼容
+        pass
     
+
     def _add_data_table(self, story: List, data: List, style_dict: Dict):
         """添加数据表格到PDF"""
         df = pd.DataFrame(data)
@@ -1022,40 +979,11 @@ class ExportManager:
             pass
     
     def _add_table_selection_to_docx(self, doc, table_info):
-        """添加表选择过程信息到DOCX"""
-        if not table_info or not any(table_info.values()):
-            return
-        
-        doc.add_heading("🗄️ 智能表选择过程", 3)
-        
-        # 初步分析
-        if table_info.get("initial_analysis"):
-            doc.add_heading("第1步: 语义相似度初步筛选", 4)
-            doc.add_paragraph(table_info["initial_analysis"])
-        
-        # Agent推理
-        if table_info.get("agent_reasoning"):
-            doc.add_heading("第2步: Agent智能筛选推理", 4)
-            doc.add_paragraph(f"推理过程: {table_info['agent_reasoning']}")
-        
-        # 关联分析
-        if table_info.get("join_analysis"):
-            doc.add_heading("第3步: 表关联关系分析", 4)
-            doc.add_paragraph(table_info["join_analysis"])
-        
-        # 最终选择结果
-        if table_info.get("final_selection"):
-            final_selection = table_info["final_selection"]
-            selected_tables = final_selection.get("selected_tables", [])
-            if selected_tables:
-                doc.add_heading("最终选择的表:", 4)
-                for table in selected_tables:
-                    table_name = table.get("table_name", "未知表")
-                    relevance_score = table.get("relevance_score", 0)
-                    reasoning = table.get("reasoning", "无推理信息")
-                    table_text = f"• {table_name} (相关度: {relevance_score:.2f}) - {reasoning}"
-                    doc.add_paragraph(table_text)
+        """添加表选择过程信息到DOCX - 已弃用：表选择功能已移除"""
+        # 表选择功能已被 RAG 语义增强替代，此方法保留以保持向后兼容
+        pass
     
+
     def _add_data_table_to_docx(self, doc, data):
         """添加数据表格到DOCX"""
         try:
@@ -1200,49 +1128,6 @@ class ExportManager:
         except Exception as e:
             print(f"CSV导出失败: {e}")
             return ""
-    
-    def create_shareable_session(self, session_data: Dict, session_id: str) -> str:
-        """创建可分享的会话快照"""
-        try:
-            share_id = str(uuid.uuid4())[:8]
-            share_data = {
-                "share_id": share_id,
-                "original_session_id": session_id,
-                "created_at": datetime.now().isoformat(),
-                "session_data": session_data,
-                "access_count": 0
-            }
-            
-            share_file = os.path.join(self.shares_dir, f"share_{share_id}.json")
-            with open(share_file, 'w', encoding='utf-8') as f:
-                json.dump(share_data, f, indent=2, ensure_ascii=False)
-            
-            return share_id
-        except Exception as e:
-            print(f"创建分享失败: {e}")
-            return ""
-    
-    def get_shared_session(self, share_id: str) -> Optional[Dict]:
-        """获取分享的会话数据"""
-        try:
-            share_file = os.path.join(self.shares_dir, f"share_{share_id}.json")
-            if not os.path.exists(share_file):
-                return None
-            
-            with open(share_file, 'r', encoding='utf-8') as f:
-                share_data = json.load(f)
-            
-            # 增加访问计数
-            share_data["access_count"] += 1
-            share_data["last_accessed"] = datetime.now().isoformat()
-            
-            with open(share_file, 'w', encoding='utf-8') as f:
-                json.dump(share_data, f, indent=2, ensure_ascii=False)
-            
-            return share_data["session_data"]
-        except Exception as e:
-            print(f"获取分享会话失败: {e}")
-            return None
     
     def get_download_link(self, filepath: str) -> str:
         """生成文件下载链接"""

@@ -1,0 +1,3896 @@
+[
+  {
+    "table_name": "address",
+    "table_description": "地址信息表",
+    "primary_key": [
+      "AddressID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "StateProvinceID",
+        "references": "stateprovince.StateProvinceID",
+        "description": "关联 stateprovince 表"
+      }
+    ],
+    "business_concepts": [
+      "地址",
+      "位置",
+      "收货地址"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "AddressID",
+        "type": "integer",
+        "description": "address 主键标识符"
+      },
+      {
+        "col": "AddressLine1",
+        "type": "varchar",
+        "description": "AddressLine1 字段"
+      },
+      {
+        "col": "AddressLine2",
+        "type": "varchar",
+        "description": "AddressLine2 字段"
+      },
+      {
+        "col": "City",
+        "type": "varchar",
+        "description": "City 字段"
+      },
+      {
+        "col": "StateProvinceID",
+        "type": "integer",
+        "description": "关联 stateprovince 的外键"
+      },
+      {
+        "col": "PostalCode",
+        "type": "varchar",
+        "description": "PostalCode 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "addresstype",
+    "table_description": "地址类型表",
+    "primary_key": [
+      "AddressTypeID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "addresstype"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "AddressTypeID",
+        "type": "integer",
+        "description": "addresstype 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "awbuildversion",
+    "table_description": "awbuildversion 表",
+    "primary_key": [
+      "SystemInformationID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "awbuildversion"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SystemInformationID",
+        "type": "integer",
+        "description": "关联 systeminformation 的外键"
+      },
+      {
+        "col": "Database Version",
+        "type": "varchar",
+        "description": "Database Version 字段"
+      },
+      {
+        "col": "VersionDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "billofmaterials",
+    "table_description": "物料清单表（BOM）",
+    "primary_key": [
+      "BillOfMaterialsID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductAssemblyID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "ComponentID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "billofmaterials"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "BillOfMaterialsID",
+        "type": "integer",
+        "description": "billofmaterials 主键标识符"
+      },
+      {
+        "col": "ProductAssemblyID",
+        "type": "integer",
+        "description": "关联 productassembly 的外键"
+      },
+      {
+        "col": "ComponentID",
+        "type": "integer",
+        "description": "关联 component 的外键"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "UnitMeasureCode",
+        "type": "varchar",
+        "description": "UnitMeasureCode 字段"
+      },
+      {
+        "col": "BOMLevel",
+        "type": "smallint",
+        "description": "BOMLevel 字段"
+      },
+      {
+        "col": "PerAssemblyQty",
+        "type": "decimal",
+        "description": "数量字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "contact",
+    "table_description": "contact 表",
+    "primary_key": [
+      "ContactID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "contact"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "contact 主键标识符"
+      },
+      {
+        "col": "NameStyle",
+        "type": "bit",
+        "description": "名称字段"
+      },
+      {
+        "col": "Title",
+        "type": "varchar",
+        "description": "Title 字段"
+      },
+      {
+        "col": "FirstName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "MiddleName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "LastName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "Suffix",
+        "type": "varchar",
+        "description": "Suffix 字段"
+      },
+      {
+        "col": "EmailAddress",
+        "type": "varchar",
+        "description": "EmailAddress 字段"
+      },
+      {
+        "col": "EmailPromotion",
+        "type": "integer",
+        "description": "EmailPromotion 字段"
+      },
+      {
+        "col": "Phone",
+        "type": "varchar",
+        "description": "Phone 字段"
+      },
+      {
+        "col": "PasswordHash",
+        "type": "varchar",
+        "description": "PasswordHash 字段"
+      },
+      {
+        "col": "PasswordSalt",
+        "type": "varchar",
+        "description": "PasswordSalt 字段"
+      },
+      {
+        "col": "AdditionalContactInfo",
+        "type": "mediumtext",
+        "description": "AdditionalContactInfo 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "contactcreditcard",
+    "table_description": "contactcreditcard 表",
+    "primary_key": [
+      "ContactID",
+      "CreditCardID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ContactID",
+        "references": "contact.ContactID",
+        "description": "关联 contact 表"
+      },
+      {
+        "column": "CreditCardID",
+        "references": "creditcard.CreditCardID",
+        "description": "关联 creditcard 表"
+      }
+    ],
+    "business_concepts": [
+      "contactcreditcard"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "关联 contact 的外键"
+      },
+      {
+        "col": "CreditCardID",
+        "type": "integer",
+        "description": "关联 creditcard 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "contacttype",
+    "table_description": "联系人类型表",
+    "primary_key": [
+      "ContactTypeID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "contacttype"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ContactTypeID",
+        "type": "integer",
+        "description": "contacttype 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "countryregion",
+    "table_description": "国家地区表",
+    "primary_key": [
+      "CountryRegionCode"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "countryregion"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CountryRegionCode",
+        "type": "varchar",
+        "description": "CountryRegionCode 字段"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "countryregioncurrency",
+    "table_description": "countryregioncurrency 表",
+    "primary_key": [
+      "CountryRegionCode",
+      "CurrencyCode"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "countryregioncurrency"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CountryRegionCode",
+        "type": "varchar",
+        "description": "CountryRegionCode 字段"
+      },
+      {
+        "col": "CurrencyCode",
+        "type": "varchar",
+        "description": "CurrencyCode 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "creditcard",
+    "table_description": "信用卡信息表",
+    "primary_key": [
+      "CreditCardID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "creditcard"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CreditCardID",
+        "type": "integer",
+        "description": "creditcard 主键标识符"
+      },
+      {
+        "col": "CardType",
+        "type": "varchar",
+        "description": "CardType 字段"
+      },
+      {
+        "col": "CardNumber",
+        "type": "varchar",
+        "description": "CardNumber 字段"
+      },
+      {
+        "col": "ExpMonth",
+        "type": "tinyint",
+        "description": "ExpMonth 字段"
+      },
+      {
+        "col": "ExpYear",
+        "type": "smallint",
+        "description": "ExpYear 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "culture",
+    "table_description": "culture 表",
+    "primary_key": [
+      "CultureID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "culture"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CultureID",
+        "type": "varchar",
+        "description": "culture 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "currency",
+    "table_description": "货币类型表",
+    "primary_key": [
+      "CurrencyCode"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "currency"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CurrencyCode",
+        "type": "varchar",
+        "description": "CurrencyCode 字段"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "currencyrate",
+    "table_description": "货币汇率表",
+    "primary_key": [
+      "CurrencyRateID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "currencyrate"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CurrencyRateID",
+        "type": "integer",
+        "description": "currencyrate 主键标识符"
+      },
+      {
+        "col": "CurrencyRateDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "FromCurrencyCode",
+        "type": "varchar",
+        "description": "FromCurrencyCode 字段"
+      },
+      {
+        "col": "ToCurrencyCode",
+        "type": "varchar",
+        "description": "ToCurrencyCode 字段"
+      },
+      {
+        "col": "AverageRate",
+        "type": "double",
+        "description": "AverageRate 字段"
+      },
+      {
+        "col": "EndOfDayRate",
+        "type": "double",
+        "description": "EndOfDayRate 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "customer",
+    "table_description": "客户信息表，包含个人和商店客户",
+    "primary_key": [
+      "CustomerID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "TerritoryID",
+        "references": "salesterritory.TerritoryID",
+        "description": "关联 salesterritory 表"
+      }
+    ],
+    "business_concepts": [
+      "客户",
+      "顾客",
+      "买家",
+      "客户信息"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CustomerID",
+        "type": "integer",
+        "description": "customer 主键标识符"
+      },
+      {
+        "col": "TerritoryID",
+        "type": "integer",
+        "description": "关联 territory 的外键"
+      },
+      {
+        "col": "AccountNumber",
+        "type": "varchar",
+        "description": "AccountNumber 字段"
+      },
+      {
+        "col": "CustomerType",
+        "type": "varchar",
+        "description": "CustomerType 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "customeraddress",
+    "table_description": "customeraddress 表",
+    "primary_key": [
+      "CustomerID",
+      "AddressID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "AddressTypeID",
+        "references": "addresstype.AddressTypeID",
+        "description": "关联 addresstype 表"
+      },
+      {
+        "column": "CustomerID",
+        "references": "customer.CustomerID",
+        "description": "关联 customer 表"
+      },
+      {
+        "column": "AddressID",
+        "references": "address.AddressID",
+        "description": "关联 address 表"
+      }
+    ],
+    "business_concepts": [
+      "customeraddress"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CustomerID",
+        "type": "integer",
+        "description": "关联 customer 的外键"
+      },
+      {
+        "col": "AddressID",
+        "type": "integer",
+        "description": "关联 address 的外键"
+      },
+      {
+        "col": "AddressTypeID",
+        "type": "integer",
+        "description": "关联 addresstype 的外键"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "databaselog",
+    "table_description": "databaselog 表",
+    "primary_key": [
+      "DatabaseLogID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "databaselog"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "DatabaseLogID",
+        "type": "integer",
+        "description": "databaselog 主键标识符"
+      },
+      {
+        "col": "PostTime",
+        "type": "timestamp",
+        "description": "PostTime 字段"
+      },
+      {
+        "col": "DatabaseUser",
+        "type": "varchar",
+        "description": "DatabaseUser 字段"
+      },
+      {
+        "col": "Event",
+        "type": "varchar",
+        "description": "Event 字段"
+      },
+      {
+        "col": "Schema",
+        "type": "varchar",
+        "description": "Schema 字段"
+      },
+      {
+        "col": "Object",
+        "type": "varchar",
+        "description": "Object 字段"
+      },
+      {
+        "col": "TSQL",
+        "type": "mediumtext",
+        "description": "TSQL 字段"
+      },
+      {
+        "col": "XmlEvent",
+        "type": "mediumtext",
+        "description": "XmlEvent 字段"
+      }
+    ]
+  },
+  {
+    "table_name": "department",
+    "table_description": "部门表",
+    "primary_key": [
+      "DepartmentID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "部门",
+      "科室",
+      "组织架构"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "DepartmentID",
+        "type": "smallint",
+        "description": "department 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "GroupName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "document",
+    "table_description": "document 表",
+    "primary_key": [
+      "DocumentID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "document"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "DocumentID",
+        "type": "integer",
+        "description": "document 主键标识符"
+      },
+      {
+        "col": "Title",
+        "type": "varchar",
+        "description": "Title 字段"
+      },
+      {
+        "col": "FileName",
+        "type": "mediumtext",
+        "description": "名称字段"
+      },
+      {
+        "col": "FileExtension",
+        "type": "varchar",
+        "description": "FileExtension 字段"
+      },
+      {
+        "col": "Revision",
+        "type": "varchar",
+        "description": "Revision 字段"
+      },
+      {
+        "col": "ChangeNumber",
+        "type": "integer",
+        "description": "ChangeNumber 字段"
+      },
+      {
+        "col": "Status",
+        "type": "tinyint",
+        "description": "Status 字段"
+      },
+      {
+        "col": "DocumentSummary",
+        "type": "mediumtext",
+        "description": "DocumentSummary 字段"
+      },
+      {
+        "col": "Document",
+        "type": "blob",
+        "description": "Document 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "employee",
+    "table_description": "员工信息表",
+    "primary_key": [
+      "EmployeeID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ContactID",
+        "references": "contact.ContactID",
+        "description": "关联 contact 表"
+      },
+      {
+        "column": "ManagerID",
+        "references": "employee.EmployeeID",
+        "description": "关联 employee 表"
+      }
+    ],
+    "business_concepts": [
+      "员工",
+      "雇员",
+      "职工",
+      "工作人员"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "EmployeeID",
+        "type": "integer",
+        "description": "employee 主键标识符"
+      },
+      {
+        "col": "NationalIDNumber",
+        "type": "varchar",
+        "description": "NationalIDNumber 字段"
+      },
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "关联 contact 的外键"
+      },
+      {
+        "col": "LoginID",
+        "type": "varchar",
+        "description": "关联 login 的外键"
+      },
+      {
+        "col": "ManagerID",
+        "type": "integer",
+        "description": "关联 manager 的外键"
+      },
+      {
+        "col": "Title",
+        "type": "varchar",
+        "description": "Title 字段"
+      },
+      {
+        "col": "BirthDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "MaritalStatus",
+        "type": "varchar",
+        "description": "MaritalStatus 字段"
+      },
+      {
+        "col": "Gender",
+        "type": "varchar",
+        "description": "Gender 字段"
+      },
+      {
+        "col": "HireDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "SalariedFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "VacationHours",
+        "type": "smallint",
+        "description": "VacationHours 字段"
+      },
+      {
+        "col": "SickLeaveHours",
+        "type": "smallint",
+        "description": "SickLeaveHours 字段"
+      },
+      {
+        "col": "CurrentFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "employeeaddress",
+    "table_description": "employeeaddress 表",
+    "primary_key": [
+      "EmployeeID",
+      "AddressID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "EmployeeID",
+        "references": "employee.EmployeeID",
+        "description": "关联 employee 表"
+      },
+      {
+        "column": "AddressID",
+        "references": "address.AddressID",
+        "description": "关联 address 表"
+      }
+    ],
+    "business_concepts": [
+      "employeeaddress"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "EmployeeID",
+        "type": "integer",
+        "description": "关联 employee 的外键"
+      },
+      {
+        "col": "AddressID",
+        "type": "integer",
+        "description": "关联 address 的外键"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "employeedepartmenthistory",
+    "table_description": "员工部门历史表",
+    "primary_key": [
+      "EmployeeID",
+      "DepartmentID",
+      "ShiftID",
+      "StartDate"
+    ],
+    "foreign_keys": [
+      {
+        "column": "EmployeeID",
+        "references": "employee.EmployeeID",
+        "description": "关联 employee 表"
+      },
+      {
+        "column": "DepartmentID",
+        "references": "department.DepartmentID",
+        "description": "关联 department 表"
+      },
+      {
+        "column": "ShiftID",
+        "references": "shift.ShiftID",
+        "description": "关联 shift 表"
+      }
+    ],
+    "business_concepts": [
+      "employeedepartmenthistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "EmployeeID",
+        "type": "integer",
+        "description": "关联 employee 的外键"
+      },
+      {
+        "col": "DepartmentID",
+        "type": "smallint",
+        "description": "关联 department 的外键"
+      },
+      {
+        "col": "ShiftID",
+        "type": "tinyint",
+        "description": "关联 shift 的外键"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "employeepayhistory",
+    "table_description": "员工薪资历史表",
+    "primary_key": [
+      "EmployeeID",
+      "RateChangeDate"
+    ],
+    "foreign_keys": [
+      {
+        "column": "EmployeeID",
+        "references": "employee.EmployeeID",
+        "description": "关联 employee 表"
+      }
+    ],
+    "business_concepts": [
+      "employeepayhistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "EmployeeID",
+        "type": "integer",
+        "description": "关联 employee 的外键"
+      },
+      {
+        "col": "RateChangeDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "Rate",
+        "type": "double",
+        "description": "Rate 字段"
+      },
+      {
+        "col": "PayFrequency",
+        "type": "tinyint",
+        "description": "PayFrequency 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "errorlog",
+    "table_description": "errorlog 表",
+    "primary_key": [
+      "ErrorLogID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "errorlog"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ErrorLogID",
+        "type": "integer",
+        "description": "errorlog 主键标识符"
+      },
+      {
+        "col": "ErrorTime",
+        "type": "timestamp",
+        "description": "ErrorTime 字段"
+      },
+      {
+        "col": "UserName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ErrorNumber",
+        "type": "integer",
+        "description": "ErrorNumber 字段"
+      },
+      {
+        "col": "ErrorSeverity",
+        "type": "integer",
+        "description": "ErrorSeverity 字段"
+      },
+      {
+        "col": "ErrorState",
+        "type": "integer",
+        "description": "ErrorState 字段"
+      },
+      {
+        "col": "ErrorProcedure",
+        "type": "varchar",
+        "description": "ErrorProcedure 字段"
+      },
+      {
+        "col": "ErrorLine",
+        "type": "integer",
+        "description": "ErrorLine 字段"
+      },
+      {
+        "col": "ErrorMessage",
+        "type": "mediumtext",
+        "description": "ErrorMessage 字段"
+      }
+    ]
+  },
+  {
+    "table_name": "illustration",
+    "table_description": "illustration 表",
+    "primary_key": [
+      "IllustrationID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "illustration"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "IllustrationID",
+        "type": "integer",
+        "description": "illustration 主键标识符"
+      },
+      {
+        "col": "Diagram",
+        "type": "text",
+        "description": "Diagram 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "individual",
+    "table_description": "individual 表",
+    "primary_key": [
+      "CustomerID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "CustomerID",
+        "references": "customer.CustomerID",
+        "description": "关联 customer 表"
+      },
+      {
+        "column": "ContactID",
+        "references": "contact.ContactID",
+        "description": "关联 contact 表"
+      }
+    ],
+    "business_concepts": [
+      "individual"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CustomerID",
+        "type": "integer",
+        "description": "关联 customer 的外键"
+      },
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "关联 contact 的外键"
+      },
+      {
+        "col": "Demographics",
+        "type": "text collate \"latin1_swedish_ci\"",
+        "description": "Demographics 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "jobcandidate",
+    "table_description": "求职者表",
+    "primary_key": [
+      "JobCandidateID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "EmployeeID",
+        "references": "employee.EmployeeID",
+        "description": "关联 employee 表"
+      }
+    ],
+    "business_concepts": [
+      "jobcandidate"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "JobCandidateID",
+        "type": "integer",
+        "description": "jobcandidate 主键标识符"
+      },
+      {
+        "col": "EmployeeID",
+        "type": "integer",
+        "description": "关联 employee 的外键"
+      },
+      {
+        "col": "Resume",
+        "type": "text",
+        "description": "Resume 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "location",
+    "table_description": "库存位置表",
+    "primary_key": [
+      "LocationID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "location"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "LocationID",
+        "type": "smallint",
+        "description": "location 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "CostRate",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "Availability",
+        "type": "decimal",
+        "description": "Availability 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "product",
+    "table_description": "产品信息表，包含自行车及配件",
+    "primary_key": [
+      "ProductID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductSubcategoryID",
+        "references": "productsubcategory.ProductSubcategoryID",
+        "description": "关联 productsubcategory 表"
+      },
+      {
+        "column": "ProductModelID",
+        "references": "productmodel.ProductModelID",
+        "description": "关联 productmodel 表"
+      }
+    ],
+    "business_concepts": [
+      "产品",
+      "商品",
+      "自行车",
+      "配件"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "product 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ProductNumber",
+        "type": "varchar",
+        "description": "ProductNumber 字段"
+      },
+      {
+        "col": "MakeFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "FinishedGoodsFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "Color",
+        "type": "varchar",
+        "description": "Color 字段"
+      },
+      {
+        "col": "SafetyStockLevel",
+        "type": "smallint",
+        "description": "SafetyStockLevel 字段"
+      },
+      {
+        "col": "ReorderPoint",
+        "type": "smallint",
+        "description": "ReorderPoint 字段"
+      },
+      {
+        "col": "StandardCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ListPrice",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "Size",
+        "type": "varchar",
+        "description": "Size 字段"
+      },
+      {
+        "col": "SizeUnitMeasureCode",
+        "type": "varchar",
+        "description": "SizeUnitMeasureCode 字段"
+      },
+      {
+        "col": "WeightUnitMeasureCode",
+        "type": "varchar",
+        "description": "WeightUnitMeasureCode 字段"
+      },
+      {
+        "col": "Weight",
+        "type": "decimal",
+        "description": "Weight 字段"
+      },
+      {
+        "col": "DaysToManufacture",
+        "type": "integer",
+        "description": "DaysToManufacture 字段"
+      },
+      {
+        "col": "ProductLine",
+        "type": "varchar",
+        "description": "ProductLine 字段"
+      },
+      {
+        "col": "Class",
+        "type": "varchar",
+        "description": "Class 字段"
+      },
+      {
+        "col": "Style",
+        "type": "varchar",
+        "description": "Style 字段"
+      },
+      {
+        "col": "ProductSubcategoryID",
+        "type": "integer",
+        "description": "关联 productsubcategory 的外键"
+      },
+      {
+        "col": "ProductModelID",
+        "type": "integer",
+        "description": "关联 productmodel 的外键"
+      },
+      {
+        "col": "SellStartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "SellEndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "DiscontinuedDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productcategory",
+    "table_description": "产品类别表（大类）",
+    "primary_key": [
+      "ProductCategoryID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "产品类别",
+      "分类",
+      "大类"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductCategoryID",
+        "type": "integer",
+        "description": "productcategory 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productcosthistory",
+    "table_description": "productcosthistory 表",
+    "primary_key": [
+      "ProductID",
+      "StartDate"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "productcosthistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "StandardCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productdescription",
+    "table_description": "产品描述表（多语言）",
+    "primary_key": [
+      "ProductDescriptionID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "productdescription"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductDescriptionID",
+        "type": "integer",
+        "description": "productdescription 主键标识符"
+      },
+      {
+        "col": "Description",
+        "type": "mediumtext",
+        "description": "Description 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productdocument",
+    "table_description": "productdocument 表",
+    "primary_key": [
+      "ProductID",
+      "DocumentID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "DocumentID",
+        "references": "document.DocumentID",
+        "description": "关联 document 表"
+      }
+    ],
+    "business_concepts": [
+      "productdocument"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "DocumentID",
+        "type": "integer",
+        "description": "关联 document 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productinventory",
+    "table_description": "产品库存表",
+    "primary_key": [
+      "ProductID",
+      "LocationID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "LocationID",
+        "references": "location.LocationID",
+        "description": "关联 location 表"
+      }
+    ],
+    "business_concepts": [
+      "库存",
+      "存货",
+      "库存数量"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "LocationID",
+        "type": "smallint",
+        "description": "关联 location 的外键"
+      },
+      {
+        "col": "Shelf",
+        "type": "varchar",
+        "description": "Shelf 字段"
+      },
+      {
+        "col": "Bin",
+        "type": "tinyint",
+        "description": "Bin 字段"
+      },
+      {
+        "col": "Quantity",
+        "type": "smallint",
+        "description": "数量字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productlistpricehistory",
+    "table_description": "产品价格历史表",
+    "primary_key": [
+      "ProductID",
+      "StartDate"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "productlistpricehistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ListPrice",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productmodel",
+    "table_description": "产品型号表",
+    "primary_key": [
+      "ProductModelID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "productmodel"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductModelID",
+        "type": "integer",
+        "description": "productmodel 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "CatalogDescription",
+        "type": "text",
+        "description": "CatalogDescription 字段"
+      },
+      {
+        "col": "Instructions",
+        "type": "text",
+        "description": "Instructions 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productmodelillustration",
+    "table_description": "productmodelillustration 表",
+    "primary_key": [
+      "ProductModelID",
+      "IllustrationID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductModelID",
+        "references": "productmodel.ProductModelID",
+        "description": "关联 productmodel 表"
+      },
+      {
+        "column": "IllustrationID",
+        "references": "illustration.IllustrationID",
+        "description": "关联 illustration 表"
+      }
+    ],
+    "business_concepts": [
+      "productmodelillustration"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductModelID",
+        "type": "integer",
+        "description": "关联 productmodel 的外键"
+      },
+      {
+        "col": "IllustrationID",
+        "type": "integer",
+        "description": "关联 illustration 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productmodelproductdescriptionculture",
+    "table_description": "productmodelproductdescriptionculture 表",
+    "primary_key": [
+      "ProductModelID",
+      "ProductDescriptionID",
+      "CultureID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductModelID",
+        "references": "productmodel.ProductModelID",
+        "description": "关联 productmodel 表"
+      },
+      {
+        "column": "ProductDescriptionID",
+        "references": "productdescription.ProductDescriptionID",
+        "description": "关联 productdescription 表"
+      },
+      {
+        "column": "CultureID",
+        "references": "culture.CultureID",
+        "description": "关联 culture 表"
+      }
+    ],
+    "business_concepts": [
+      "productmodelproductdescriptionculture"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductModelID",
+        "type": "integer",
+        "description": "关联 productmodel 的外键"
+      },
+      {
+        "col": "ProductDescriptionID",
+        "type": "integer",
+        "description": "关联 productdescription 的外键"
+      },
+      {
+        "col": "CultureID",
+        "type": "varchar",
+        "description": "关联 culture 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productphoto",
+    "table_description": "产品图片表",
+    "primary_key": [
+      "ProductPhotoID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "productphoto"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductPhotoID",
+        "type": "integer",
+        "description": "productphoto 主键标识符"
+      },
+      {
+        "col": "ThumbNailPhoto",
+        "type": "blob",
+        "description": "ThumbNailPhoto 字段"
+      },
+      {
+        "col": "ThumbnailPhotoFileName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "LargePhoto",
+        "type": "blob",
+        "description": "LargePhoto 字段"
+      },
+      {
+        "col": "LargePhotoFileName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productproductphoto",
+    "table_description": "productproductphoto 表",
+    "primary_key": [
+      "ProductID",
+      "ProductPhotoID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "ProductPhotoID",
+        "references": "productphoto.ProductPhotoID",
+        "description": "关联 productphoto 表"
+      }
+    ],
+    "business_concepts": [
+      "productproductphoto"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "ProductPhotoID",
+        "type": "integer",
+        "description": "关联 productphoto 的外键"
+      },
+      {
+        "col": "Primary",
+        "type": "bit",
+        "description": "Primary 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productreview",
+    "table_description": "产品评论表",
+    "primary_key": [
+      "ProductReviewID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "productreview"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductReviewID",
+        "type": "integer",
+        "description": "productreview 主键标识符"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "ReviewerName",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ReviewDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EmailAddress",
+        "type": "varchar",
+        "description": "EmailAddress 字段"
+      },
+      {
+        "col": "Rating",
+        "type": "integer",
+        "description": "Rating 字段"
+      },
+      {
+        "col": "Comments",
+        "type": "mediumtext",
+        "description": "Comments 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productsubcategory",
+    "table_description": "产品子类别表",
+    "primary_key": [
+      "ProductSubcategoryID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductCategoryID",
+        "references": "productcategory.ProductCategoryID",
+        "description": "关联 productcategory 表"
+      }
+    ],
+    "business_concepts": [
+      "产品子类",
+      "子分类"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductSubcategoryID",
+        "type": "integer",
+        "description": "productsubcategory 主键标识符"
+      },
+      {
+        "col": "ProductCategoryID",
+        "type": "integer",
+        "description": "关联 productcategory 的外键"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "productvendor",
+    "table_description": "产品供应商关联表",
+    "primary_key": [
+      "ProductID",
+      "VendorID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "VendorID",
+        "references": "vendor.VendorID",
+        "description": "关联 vendor 表"
+      }
+    ],
+    "business_concepts": [
+      "productvendor"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "VendorID",
+        "type": "integer",
+        "description": "关联 vendor 的外键"
+      },
+      {
+        "col": "AverageLeadTime",
+        "type": "integer",
+        "description": "AverageLeadTime 字段"
+      },
+      {
+        "col": "StandardPrice",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "LastReceiptCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "LastReceiptDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "MinOrderQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "MaxOrderQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "OnOrderQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "UnitMeasureCode",
+        "type": "varchar",
+        "description": "UnitMeasureCode 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "purchaseorderdetail",
+    "table_description": "采购订单明细表",
+    "primary_key": [
+      "PurchaseOrderDetailID",
+      "PurchaseOrderID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "PurchaseOrderID",
+        "references": "purchaseorderheader.PurchaseOrderID",
+        "description": "关联 purchaseorderheader 表"
+      },
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "采购明细",
+      "进货详情"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "PurchaseOrderID",
+        "type": "integer",
+        "description": "关联 purchaseorder 的外键"
+      },
+      {
+        "col": "PurchaseOrderDetailID",
+        "type": "integer",
+        "description": "purchaseorderdetail 主键标识符"
+      },
+      {
+        "col": "DueDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "OrderQty",
+        "type": "smallint",
+        "description": "数量字段"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "UnitPrice",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "LineTotal",
+        "type": "double",
+        "description": "LineTotal 字段"
+      },
+      {
+        "col": "ReceivedQty",
+        "type": "decimal",
+        "description": "数量字段"
+      },
+      {
+        "col": "RejectedQty",
+        "type": "decimal",
+        "description": "数量字段"
+      },
+      {
+        "col": "StockedQty",
+        "type": "decimal",
+        "description": "数量字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "purchaseorderheader",
+    "table_description": "采购订单头表",
+    "primary_key": [
+      "PurchaseOrderID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "EmployeeID",
+        "references": "employee.EmployeeID",
+        "description": "关联 employee 表"
+      },
+      {
+        "column": "VendorID",
+        "references": "vendor.VendorID",
+        "description": "关联 vendor 表"
+      },
+      {
+        "column": "ShipMethodID",
+        "references": "shipmethod.ShipMethodID",
+        "description": "关联 shipmethod 表"
+      }
+    ],
+    "business_concepts": [
+      "采购订单",
+      "进货单"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "PurchaseOrderID",
+        "type": "integer",
+        "description": "关联 purchaseorder 的外键"
+      },
+      {
+        "col": "RevisionNumber",
+        "type": "tinyint",
+        "description": "RevisionNumber 字段"
+      },
+      {
+        "col": "Status",
+        "type": "tinyint",
+        "description": "Status 字段"
+      },
+      {
+        "col": "EmployeeID",
+        "type": "integer",
+        "description": "关联 employee 的外键"
+      },
+      {
+        "col": "VendorID",
+        "type": "integer",
+        "description": "关联 vendor 的外键"
+      },
+      {
+        "col": "ShipMethodID",
+        "type": "integer",
+        "description": "关联 shipmethod 的外键"
+      },
+      {
+        "col": "OrderDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ShipDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "SubTotal",
+        "type": "double",
+        "description": "SubTotal 字段"
+      },
+      {
+        "col": "TaxAmt",
+        "type": "double",
+        "description": "TaxAmt 字段"
+      },
+      {
+        "col": "Freight",
+        "type": "double",
+        "description": "Freight 字段"
+      },
+      {
+        "col": "TotalDue",
+        "type": "double",
+        "description": "TotalDue 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesorderdetail",
+    "table_description": "销售订单明细表，包含订单产品详情",
+    "primary_key": [
+      "SalesOrderDetailID",
+      "SalesOrderID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "SalesOrderID",
+        "references": "salesorderheader.SalesOrderID",
+        "description": "关联 salesorderheader 表"
+      },
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "SpecialOfferID",
+        "references": "specialofferproduct.SpecialOfferID",
+        "description": "关联 specialofferproduct 表"
+      }
+    ],
+    "business_concepts": [
+      "订单明细",
+      "订单详情",
+      "购买产品"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesOrderID",
+        "type": "integer",
+        "description": "关联 salesorder 的外键"
+      },
+      {
+        "col": "SalesOrderDetailID",
+        "type": "integer",
+        "description": "salesorderdetail 主键标识符"
+      },
+      {
+        "col": "CarrierTrackingNumber",
+        "type": "varchar",
+        "description": "CarrierTrackingNumber 字段"
+      },
+      {
+        "col": "OrderQty",
+        "type": "smallint",
+        "description": "数量字段"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "SpecialOfferID",
+        "type": "integer",
+        "description": "关联 specialoffer 的外键"
+      },
+      {
+        "col": "UnitPrice",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "UnitPriceDiscount",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "LineTotal",
+        "type": "double",
+        "description": "LineTotal 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesorderheader",
+    "table_description": "销售订单头表，包含订单基本信息",
+    "primary_key": [
+      "SalesOrderID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "CustomerID",
+        "references": "customer.CustomerID",
+        "description": "关联 customer 表"
+      },
+      {
+        "column": "ContactID",
+        "references": "contact.ContactID",
+        "description": "关联 contact 表"
+      },
+      {
+        "column": "TerritoryID",
+        "references": "salesterritory.TerritoryID",
+        "description": "关联 salesterritory 表"
+      },
+      {
+        "column": "BillToAddressID",
+        "references": "address.AddressID",
+        "description": "关联 address 表"
+      },
+      {
+        "column": "ShipToAddressID",
+        "references": "address.AddressID",
+        "description": "关联 address 表"
+      },
+      {
+        "column": "ShipMethodID",
+        "references": "shipmethod.ShipMethodID",
+        "description": "关联 shipmethod 表"
+      },
+      {
+        "column": "CreditCardID",
+        "references": "creditcard.CreditCardID",
+        "description": "关联 creditcard 表"
+      },
+      {
+        "column": "CurrencyRateID",
+        "references": "currencyrate.CurrencyRateID",
+        "description": "关联 currencyrate 表"
+      }
+    ],
+    "business_concepts": [
+      "订单",
+      "销售订单",
+      "购买记录",
+      "订单信息"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesOrderID",
+        "type": "integer",
+        "description": "关联 salesorder 的外键"
+      },
+      {
+        "col": "RevisionNumber",
+        "type": "tinyint",
+        "description": "RevisionNumber 字段"
+      },
+      {
+        "col": "OrderDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "DueDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ShipDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "Status",
+        "type": "tinyint",
+        "description": "Status 字段"
+      },
+      {
+        "col": "OnlineOrderFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "SalesOrderNumber",
+        "type": "varchar",
+        "description": "SalesOrderNumber 字段"
+      },
+      {
+        "col": "PurchaseOrderNumber",
+        "type": "varchar",
+        "description": "PurchaseOrderNumber 字段"
+      },
+      {
+        "col": "AccountNumber",
+        "type": "varchar",
+        "description": "AccountNumber 字段"
+      },
+      {
+        "col": "CustomerID",
+        "type": "integer",
+        "description": "关联 customer 的外键"
+      },
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "关联 contact 的外键"
+      },
+      {
+        "col": "SalesPersonID",
+        "type": "integer",
+        "description": "关联 salesperson 的外键"
+      },
+      {
+        "col": "TerritoryID",
+        "type": "integer",
+        "description": "关联 territory 的外键"
+      },
+      {
+        "col": "BillToAddressID",
+        "type": "integer",
+        "description": "关联 billtoaddress 的外键"
+      },
+      {
+        "col": "ShipToAddressID",
+        "type": "integer",
+        "description": "关联 shiptoaddress 的外键"
+      },
+      {
+        "col": "ShipMethodID",
+        "type": "integer",
+        "description": "关联 shipmethod 的外键"
+      },
+      {
+        "col": "CreditCardID",
+        "type": "integer",
+        "description": "关联 creditcard 的外键"
+      },
+      {
+        "col": "CreditCardApprovalCode",
+        "type": "varchar",
+        "description": "CreditCardApprovalCode 字段"
+      },
+      {
+        "col": "CurrencyRateID",
+        "type": "integer",
+        "description": "关联 currencyrate 的外键"
+      },
+      {
+        "col": "SubTotal",
+        "type": "double",
+        "description": "SubTotal 字段"
+      },
+      {
+        "col": "TaxAmt",
+        "type": "double",
+        "description": "TaxAmt 字段"
+      },
+      {
+        "col": "Freight",
+        "type": "double",
+        "description": "Freight 字段"
+      },
+      {
+        "col": "TotalDue",
+        "type": "double",
+        "description": "TotalDue 字段"
+      },
+      {
+        "col": "Comment",
+        "type": "varchar",
+        "description": "Comment 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesorderheadersalesreason",
+    "table_description": "salesorderheadersalesreason 表",
+    "primary_key": [
+      "SalesOrderID",
+      "SalesReasonID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "SalesOrderID",
+        "references": "salesorderheader.SalesOrderID",
+        "description": "关联 salesorderheader 表"
+      },
+      {
+        "column": "SalesReasonID",
+        "references": "salesreason.SalesReasonID",
+        "description": "关联 salesreason 表"
+      }
+    ],
+    "business_concepts": [
+      "salesorderheadersalesreason"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesOrderID",
+        "type": "integer",
+        "description": "关联 salesorder 的外键"
+      },
+      {
+        "col": "SalesReasonID",
+        "type": "integer",
+        "description": "关联 salesreason 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesperson",
+    "table_description": "销售人员信息表",
+    "primary_key": [
+      "SalesPersonID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "TerritoryID",
+        "references": "salesterritory.TerritoryID",
+        "description": "关联 salesterritory 表"
+      }
+    ],
+    "business_concepts": [
+      "销售人员",
+      "销售员",
+      "业务员"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesPersonID",
+        "type": "integer",
+        "description": "salesperson 主键标识符"
+      },
+      {
+        "col": "TerritoryID",
+        "type": "integer",
+        "description": "关联 territory 的外键"
+      },
+      {
+        "col": "SalesQuota",
+        "type": "double",
+        "description": "SalesQuota 字段"
+      },
+      {
+        "col": "Bonus",
+        "type": "double",
+        "description": "Bonus 字段"
+      },
+      {
+        "col": "CommissionPct",
+        "type": "double",
+        "description": "CommissionPct 字段"
+      },
+      {
+        "col": "SalesYTD",
+        "type": "double",
+        "description": "SalesYTD 字段"
+      },
+      {
+        "col": "SalesLastYear",
+        "type": "double",
+        "description": "SalesLastYear 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salespersonquotahistory",
+    "table_description": "salespersonquotahistory 表",
+    "primary_key": [
+      "SalesPersonID",
+      "QuotaDate"
+    ],
+    "foreign_keys": [
+      {
+        "column": "SalesPersonID",
+        "references": "salesperson.SalesPersonID",
+        "description": "关联 salesperson 表"
+      }
+    ],
+    "business_concepts": [
+      "salespersonquotahistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesPersonID",
+        "type": "integer",
+        "description": "关联 salesperson 的外键"
+      },
+      {
+        "col": "QuotaDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "SalesQuota",
+        "type": "double",
+        "description": "SalesQuota 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesreason",
+    "table_description": "salesreason 表",
+    "primary_key": [
+      "SalesReasonID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "salesreason"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesReasonID",
+        "type": "integer",
+        "description": "salesreason 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ReasonType",
+        "type": "varchar",
+        "description": "ReasonType 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salestaxrate",
+    "table_description": "salestaxrate 表",
+    "primary_key": [
+      "SalesTaxRateID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "StateProvinceID",
+        "references": "stateprovince.StateProvinceID",
+        "description": "关联 stateprovince 表 (推断)"
+      }
+    ],
+    "business_concepts": [
+      "salestaxrate"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesTaxRateID",
+        "type": "integer",
+        "description": "salestaxrate 主键标识符"
+      },
+      {
+        "col": "StateProvinceID",
+        "type": "integer",
+        "description": "关联 stateprovince 的外键"
+      },
+      {
+        "col": "TaxType",
+        "type": "tinyint",
+        "description": "TaxType 字段"
+      },
+      {
+        "col": "TaxRate",
+        "type": "double",
+        "description": "TaxRate 字段"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesterritory",
+    "table_description": "销售区域表",
+    "primary_key": [
+      "TerritoryID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "CountryRegionCode",
+        "references": "countryregion.CountryRegionCode",
+        "description": "关联 countryregion 表"
+      }
+    ],
+    "business_concepts": [
+      "销售区域",
+      "销售地区",
+      "市场区域"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "TerritoryID",
+        "type": "integer",
+        "description": "关联 territory 的外键"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "CountryRegionCode",
+        "type": "varchar",
+        "description": "CountryRegionCode 字段"
+      },
+      {
+        "col": "Group",
+        "type": "varchar",
+        "description": "Group 字段"
+      },
+      {
+        "col": "SalesYTD",
+        "type": "double",
+        "description": "SalesYTD 字段"
+      },
+      {
+        "col": "SalesLastYear",
+        "type": "double",
+        "description": "SalesLastYear 字段"
+      },
+      {
+        "col": "CostYTD",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "CostLastYear",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "salesterritoryhistory",
+    "table_description": "salesterritoryhistory 表",
+    "primary_key": [
+      "SalesPersonID",
+      "TerritoryID",
+      "StartDate"
+    ],
+    "foreign_keys": [
+      {
+        "column": "TerritoryID",
+        "references": "salesterritory.TerritoryID",
+        "description": "关联 salesterritory 表"
+      }
+    ],
+    "business_concepts": [
+      "salesterritoryhistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SalesPersonID",
+        "type": "integer",
+        "description": "关联 salesperson 的外键"
+      },
+      {
+        "col": "TerritoryID",
+        "type": "integer",
+        "description": "关联 territory 的外键"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "scrapreason",
+    "table_description": "scrapreason 表",
+    "primary_key": [
+      "ScrapReasonID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "scrapreason"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ScrapReasonID",
+        "type": "smallint",
+        "description": "scrapreason 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "shift",
+    "table_description": "班次表",
+    "primary_key": [
+      "ShiftID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "shift"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ShiftID",
+        "type": "tinyint",
+        "description": "shift 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "StartTime",
+        "type": "datetime",
+        "description": "StartTime 字段"
+      },
+      {
+        "col": "EndTime",
+        "type": "datetime",
+        "description": "EndTime 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "shipmethod",
+    "table_description": "发货方式表",
+    "primary_key": [
+      "ShipMethodID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "shipmethod"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ShipMethodID",
+        "type": "integer",
+        "description": "shipmethod 主键标识符"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ShipBase",
+        "type": "double",
+        "description": "ShipBase 字段"
+      },
+      {
+        "col": "ShipRate",
+        "type": "double",
+        "description": "ShipRate 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "shoppingcartitem",
+    "table_description": "shoppingcartitem 表",
+    "primary_key": [
+      "ShoppingCartItemID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "shoppingcartitem"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "ShoppingCartItemID",
+        "type": "integer",
+        "description": "shoppingcartitem 主键标识符"
+      },
+      {
+        "col": "ShoppingCartID",
+        "type": "varchar",
+        "description": "关联 shoppingcart 的外键"
+      },
+      {
+        "col": "Quantity",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "DateCreated",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "specialoffer",
+    "table_description": "特价促销活动表",
+    "primary_key": [
+      "SpecialOfferID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "促销",
+      "特价",
+      "优惠活动"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SpecialOfferID",
+        "type": "integer",
+        "description": "specialoffer 主键标识符"
+      },
+      {
+        "col": "Description",
+        "type": "varchar",
+        "description": "Description 字段"
+      },
+      {
+        "col": "DiscountPct",
+        "type": "double",
+        "description": "DiscountPct 字段"
+      },
+      {
+        "col": "Type",
+        "type": "varchar",
+        "description": "Type 字段"
+      },
+      {
+        "col": "Category",
+        "type": "varchar",
+        "description": "Category 字段"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "MinQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "MaxQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "specialofferproduct",
+    "table_description": "特价产品关联表",
+    "primary_key": [
+      "SpecialOfferID",
+      "ProductID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "specialofferproduct"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "SpecialOfferID",
+        "type": "integer",
+        "description": "关联 specialoffer 的外键"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "stateprovince",
+    "table_description": "州/省份表",
+    "primary_key": [
+      "StateProvinceID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "CountryRegionCode",
+        "references": "countryregion.CountryRegionCode",
+        "description": "关联 countryregion 表"
+      },
+      {
+        "column": "TerritoryID",
+        "references": "salesterritory.TerritoryID",
+        "description": "关联 salesterritory 表"
+      }
+    ],
+    "business_concepts": [
+      "stateprovince"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "StateProvinceID",
+        "type": "integer",
+        "description": "stateprovince 主键标识符"
+      },
+      {
+        "col": "StateProvinceCode",
+        "type": "varchar",
+        "description": "StateProvinceCode 字段"
+      },
+      {
+        "col": "CountryRegionCode",
+        "type": "varchar",
+        "description": "CountryRegionCode 字段"
+      },
+      {
+        "col": "IsOnlyStateProvinceFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "TerritoryID",
+        "type": "integer",
+        "description": "关联 territory 的外键"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "store",
+    "table_description": "零售店铺信息表",
+    "primary_key": [
+      "CustomerID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "CustomerID",
+        "references": "customer.CustomerID",
+        "description": "关联 customer 表"
+      },
+      {
+        "column": "SalesPersonID",
+        "references": "salesperson.SalesPersonID",
+        "description": "关联 salesperson 表"
+      }
+    ],
+    "business_concepts": [
+      "店铺",
+      "商店",
+      "零售店"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CustomerID",
+        "type": "integer",
+        "description": "关联 customer 的外键"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "SalesPersonID",
+        "type": "integer",
+        "description": "关联 salesperson 的外键"
+      },
+      {
+        "col": "Demographics",
+        "type": "text",
+        "description": "Demographics 字段"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "storecontact",
+    "table_description": "storecontact 表",
+    "primary_key": [
+      "CustomerID",
+      "ContactID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "CustomerID",
+        "references": "customer.CustomerID",
+        "description": "关联 customer 表"
+      },
+      {
+        "column": "ContactID",
+        "references": "contact.ContactID",
+        "description": "关联 contact 表"
+      },
+      {
+        "column": "ContactTypeID",
+        "references": "contacttype.ContactTypeID",
+        "description": "关联 contacttype 表"
+      }
+    ],
+    "business_concepts": [
+      "storecontact"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "CustomerID",
+        "type": "integer",
+        "description": "关联 customer 的外键"
+      },
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "关联 contact 的外键"
+      },
+      {
+        "col": "ContactTypeID",
+        "type": "integer",
+        "description": "关联 contacttype 的外键"
+      },
+      {
+        "col": "rowguid",
+        "type": "varbinary",
+        "description": "关联 rowgu 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "transactionhistory",
+    "table_description": "transactionhistory 表",
+    "primary_key": [
+      "TransactionID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "transactionhistory"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "TransactionID",
+        "type": "integer",
+        "description": "关联 transaction 的外键"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "ReferenceOrderID",
+        "type": "integer",
+        "description": "关联 referenceorder 的外键"
+      },
+      {
+        "col": "ReferenceOrderLineID",
+        "type": "integer",
+        "description": "关联 referenceorderline 的外键"
+      },
+      {
+        "col": "TransactionDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "TransactionType",
+        "type": "varchar",
+        "description": "TransactionType 字段"
+      },
+      {
+        "col": "Quantity",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "ActualCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "transactionhistoryarchive",
+    "table_description": "transactionhistoryarchive 表",
+    "primary_key": [
+      "TransactionID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      }
+    ],
+    "business_concepts": [
+      "transactionhistoryarchive"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "TransactionID",
+        "type": "integer",
+        "description": "关联 transaction 的外键"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "ReferenceOrderID",
+        "type": "integer",
+        "description": "关联 referenceorder 的外键"
+      },
+      {
+        "col": "ReferenceOrderLineID",
+        "type": "integer",
+        "description": "关联 referenceorderline 的外键"
+      },
+      {
+        "col": "TransactionDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "TransactionType",
+        "type": "varchar",
+        "description": "TransactionType 字段"
+      },
+      {
+        "col": "Quantity",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "ActualCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "unitmeasure",
+    "table_description": "计量单位表",
+    "primary_key": [
+      "UnitMeasureCode"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "unitmeasure"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "UnitMeasureCode",
+        "type": "varchar",
+        "description": "UnitMeasureCode 字段"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "vendor",
+    "table_description": "供应商信息表",
+    "primary_key": [
+      "VendorID"
+    ],
+    "foreign_keys": [],
+    "business_concepts": [
+      "供应商",
+      "供货商",
+      "进货渠道"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "VendorID",
+        "type": "integer",
+        "description": "vendor 主键标识符"
+      },
+      {
+        "col": "AccountNumber",
+        "type": "varchar",
+        "description": "AccountNumber 字段"
+      },
+      {
+        "col": "Name",
+        "type": "varchar",
+        "description": "名称字段"
+      },
+      {
+        "col": "CreditRating",
+        "type": "tinyint",
+        "description": "CreditRating 字段"
+      },
+      {
+        "col": "PreferredVendorStatus",
+        "type": "bit",
+        "description": "PreferredVendorStatus 字段"
+      },
+      {
+        "col": "ActiveFlag",
+        "type": "bit",
+        "description": "布尔标志字段"
+      },
+      {
+        "col": "PurchasingWebServiceURL",
+        "type": "mediumtext",
+        "description": "PurchasingWebServiceURL 字段"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "vendoraddress",
+    "table_description": "vendoraddress 表",
+    "primary_key": [
+      "VendorID",
+      "AddressID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "VendorID",
+        "references": "vendor.VendorID",
+        "description": "关联 vendor 表"
+      },
+      {
+        "column": "AddressID",
+        "references": "address.AddressID",
+        "description": "关联 address 表"
+      },
+      {
+        "column": "AddressTypeID",
+        "references": "addresstype.AddressTypeID",
+        "description": "关联 addresstype 表"
+      }
+    ],
+    "business_concepts": [
+      "vendoraddress"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "VendorID",
+        "type": "integer",
+        "description": "关联 vendor 的外键"
+      },
+      {
+        "col": "AddressID",
+        "type": "integer",
+        "description": "关联 address 的外键"
+      },
+      {
+        "col": "AddressTypeID",
+        "type": "integer",
+        "description": "关联 addresstype 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "vendorcontact",
+    "table_description": "vendorcontact 表",
+    "primary_key": [
+      "VendorID",
+      "ContactID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ContactID",
+        "references": "contact.ContactID",
+        "description": "关联 contact 表"
+      }
+    ],
+    "business_concepts": [
+      "vendorcontact"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "VendorID",
+        "type": "integer",
+        "description": "关联 vendor 的外键"
+      },
+      {
+        "col": "ContactID",
+        "type": "integer",
+        "description": "关联 contact 的外键"
+      },
+      {
+        "col": "ContactTypeID",
+        "type": "integer",
+        "description": "关联 contacttype 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "workorder",
+    "table_description": "生产工单表",
+    "primary_key": [
+      "WorkOrderID"
+    ],
+    "foreign_keys": [
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "ScrapReasonID",
+        "references": "scrapreason.ScrapReasonID",
+        "description": "关联 scrapreason 表"
+      }
+    ],
+    "business_concepts": [
+      "工单",
+      "生产订单",
+      "制造工单"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "WorkOrderID",
+        "type": "integer",
+        "description": "workorder 主键标识符"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "OrderQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "StockedQty",
+        "type": "integer",
+        "description": "数量字段"
+      },
+      {
+        "col": "ScrappedQty",
+        "type": "smallint",
+        "description": "数量字段"
+      },
+      {
+        "col": "StartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "EndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "DueDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ScrapReasonID",
+        "type": "smallint",
+        "description": "关联 scrapreason 的外键"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  },
+  {
+    "table_name": "workorderrouting",
+    "table_description": "workorderrouting 表",
+    "primary_key": [
+      "WorkOrderID",
+      "ProductID",
+      "OperationSequence"
+    ],
+    "foreign_keys": [
+      {
+        "column": "WorkOrderID",
+        "references": "workorder.WorkOrderID",
+        "description": "关联 workorder 表"
+      },
+      {
+        "column": "ProductID",
+        "references": "product.ProductID",
+        "description": "关联 product 表"
+      },
+      {
+        "column": "LocationID",
+        "references": "location.LocationID",
+        "description": "关联 location 表"
+      }
+    ],
+    "business_concepts": [
+      "workorderrouting"
+    ],
+    "sample_queries": [],
+    "columns": [
+      {
+        "col": "WorkOrderID",
+        "type": "integer",
+        "description": "关联 workorder 的外键"
+      },
+      {
+        "col": "ProductID",
+        "type": "integer",
+        "description": "关联 product 的外键"
+      },
+      {
+        "col": "OperationSequence",
+        "type": "smallint",
+        "description": "OperationSequence 字段"
+      },
+      {
+        "col": "LocationID",
+        "type": "smallint",
+        "description": "关联 location 的外键"
+      },
+      {
+        "col": "ScheduledStartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ScheduledEndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ActualStartDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ActualEndDate",
+        "type": "datetime",
+        "description": "日期时间字段"
+      },
+      {
+        "col": "ActualResourceHrs",
+        "type": "decimal",
+        "description": "ActualResourceHrs 字段"
+      },
+      {
+        "col": "PlannedCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ActualCost",
+        "type": "double",
+        "description": "价格/成本金额"
+      },
+      {
+        "col": "ModifiedDate",
+        "type": "timestamp",
+        "description": "日期时间字段"
+      }
+    ]
+  }
+]

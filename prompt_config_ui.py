@@ -25,6 +25,36 @@ class PromptConfigUI:
         with st.sidebar:
             st.header("🔧 Prompt配置")
             
+            # 数据库选择器 - 支持 Northwind/AdventureWorks 切换
+            available_dbs = self.manager.get_available_databases()
+            if len(available_dbs) > 1:
+                st.subheader("🗄️ 数据库配置")
+                current_db = self.manager.get_current_database()
+                
+                db_display_names = {
+                    'northwind': '🍎 Northwind (食品贸易)',
+                    'adventureworks': '🚴 AdventureWorks (自行车制造)'
+                }
+                
+                selected_db = st.selectbox(
+                    "选择数据库",
+                    options=list(available_dbs.keys()),
+                    index=list(available_dbs.keys()).index(current_db) if current_db in available_dbs else 0,
+                    format_func=lambda x: db_display_names.get(x, x),
+                    help="切换数据库将加载对应的业务上下文、术语词典和示例查询"
+                )
+                
+                if selected_db != current_db:
+                    if st.button("🔄 切换数据库", type="primary", use_container_width=True):
+                        success = self.manager.switch_database(selected_db)
+                        if success:
+                            st.success(f"✅ 已切换到 {db_display_names.get(selected_db, selected_db)}")
+                            st.rerun()
+                        else:
+                            st.error("❌ 数据库切换失败")
+                
+                st.divider()
+            
             # 配置摘要
             summary = self.manager.get_config_summary()
             
@@ -307,7 +337,7 @@ class PromptConfigUI:
         term_to_edit = st.selectbox(
             "选择要修改的术语",
             options=list(self.manager.term_dictionary.terms.keys()),
-            format_func=lambda x: f"{x} - {self.manager.term_dictionary.terms[x][:50]}..."
+            format_func=lambda x: f"{x} - {str(self.manager.term_dictionary.terms.get(x, ''))[:50]}..."
         )
         
         if term_to_edit:
@@ -346,7 +376,7 @@ class PromptConfigUI:
         terms_to_delete = st.multiselect(
             "选择要删除的术语（可多选）",
             options=list(self.manager.term_dictionary.terms.keys()),
-            format_func=lambda x: f"{x} - {self.manager.term_dictionary.terms[x][:50]}..."
+            format_func=lambda x: f"{x} - {str(self.manager.term_dictionary.terms.get(x, ''))[:50]}..."
         )
         
         if terms_to_delete:
@@ -375,6 +405,33 @@ class PromptConfigUI:
     def render_example_queries_config(self):
         """渲染示例查询配置"""
         st.subheader("💡 示例查询管理")
+        
+        # 相似度阈值配置
+        with st.expander("⚙️ 匹配设置", expanded=False):
+            st.info("控制示例查询的匹配灵敏度。阈值越高，匹配越严格，减少无关示例；阈值越低，匹配越宽松，可能显示更多相关示例。")
+            
+            # 转换为百分比整数显示（内部存储0.0-1.0，UI显示0-100%）
+            current_threshold_pct = int(self.manager.example_query_threshold * 100)
+            new_threshold_pct = st.slider(
+                "相似度阈值",
+                min_value=0,
+                max_value=100,
+                value=current_threshold_pct,
+                step=5,
+                format="%d%%",
+                help="用户查询与示例查询的最低相似度，低于此值的示例不会显示。建议值：20-50%"
+            )
+            
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if new_threshold_pct != current_threshold_pct:
+                    if st.button("💾 保存阈值", type="primary"):
+                        self.manager.example_query_threshold = new_threshold_pct / 100.0
+                        self.manager.save_config()
+                        st.success(f"✅ 阈值已更新为 {new_threshold_pct}%")
+                        st.rerun()
+            with col2:
+                st.caption(f"当前阈值: {current_threshold_pct}%")
         
         # 添加新示例
         with st.expander("➕ 添加示例查询", expanded=True):

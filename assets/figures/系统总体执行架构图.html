@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>系统总体架构图</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f9; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 900px; border: 1px solid #ccc; background: white; padding: 30px; border-radius: 8px; position: relative; }
+        .layer { border: 2px solid #2c3e50; border-radius: 6px; margin-bottom: 0px; padding: 20px 10px 10px 10px; position: relative; }
+        .layer-title { font-weight: bold; background: #2c3e50; color: white; padding: 6px 16px; position: absolute; top: -16px; left: 20px; font-size: 13px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .component-box { display: flex; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
+        .item { border: 1px solid #3498db; padding: 6px; border-radius: 4px; font-size: 13px;font-weight: bold; background: #ecf0f1; flex: 1; text-align: center; min-width: 120px; margin: 2px; }
+        .hybrid-routing { border: 2px solid #3498db; border-radius: 6px; padding: 10px; margin: 10px 0; background: #e8f4f8; }
+        .routing-title { font-weight: bold; color: #2980b9; text-align: center; margin-bottom: 4px; font-size: 14px; }
+        .arrow { text-align: center; color: #2c3e50; font-size: 22px; margin: 0px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="text-align: center; font-size: 18px;">图 3-1 系统总体执行架构概览图</h2>
+        <h3 style="text-align: center; font-size: 14px; color: #7f8c8d; margin-top: 0;">Figure 3-1 Overview of the overall system execution architecture</h3>
+        
+        <!-- 前端交互层 -->
+        <div class="layer">
+            <span class="layer-title">前端交互层 (Frontend Layer)</span>
+            <div class="component-box">
+                <div class="item">Streamlit Web UI</div>
+                <div class="item">会话管理</div>
+                <div class="item">Prompt 配置面板</div>
+                <div class="item">Plotly 可视化</div>
+            </div>
+        </div>
+        <div class="arrow">↓</div>
+        
+        <!-- 核心业务层 -->
+        <div class="layer">
+            <span class="layer-title">核心业务层 (Business Layer)</span>
+            <div class="component-box">
+                <div class="item">Text2SQLAgent</div>
+                <div class="item">IntelligentTableSelector</div>
+                <div class="item">ErrorContextManager</div>
+                <div class="item">会话状态管理</div>
+            </div>
+        </div>
+        <div class="arrow">↓</div>
+        
+        <!-- AI 推理层 -->
+        <div class="layer">
+            <span class="layer-title">AI 推理层 (AI Inference Layer)</span>
+            <div class="component-box">
+                <div class="item">DeepSeek-Chat (V3.2)</div>
+                <div class="item">IntelRAG</div>
+                <div class="item">Embedding 模型</div>
+            </div>
+            
+            <!-- 端云灵活切换的混合路由机制 -->
+            <div class="hybrid-routing">
+                <div class="routing-title">端云灵活切换的混合路由机制 (Hybrid Routing)</div>
+                <div class="component-box">
+                    <div class="item" style="background: #3498db; color: white;">端侧: OpenVINO BGE-Small (Embedding)</div>
+                    <div class="item" style="background: #9b59b6; color: white;">云端: DeepSeek API (Chat V3.2)</div>
+                    <div class="item" style="background: #27ae60; color: white;">本地: Ollama 量化模型 (可选)</div>
+                </div>
+            </div>
+        </div>
+        <div class="arrow">↓</div>
+        
+        <!-- 数据处理层 -->
+        <div class="layer">
+            <span class="layer-title">数据处理层 (Data Processing Layer)</span>
+            <div class="component-box">
+                <div class="item">RobustVisualizationEngine</div>
+                <div class="item">AnomalyDetector</div>
+                <div class="item">ExportManager</div>
+                <div class="item">Pandas 数据处理</div>
+            </div>
+        </div>
+        <div class="arrow">↓</div>
+        
+        <!-- 硬件优化层 -->
+        <div class="layer">
+            <span class="layer-title">硬件优化层 (Hardware Optimization Layer)</span>
+            <div class="component-box">
+                <div class="item">UniversalHardwareOptimizer</div>
+                <div class="item">MD5 查询缓存</div>
+                <div class="item">LRU 淘汰机制</div>
+                <div class="item">性能遥测与线程数建议</div>
+            </div>
+        </div>
+        <div class="arrow">↓</div>
+        
+        
+        <!-- 数据存储层 -->
+        <div class="layer">
+            <span class="layer-title">数据存储层 (Storage Layer)</span>
+            <div class="component-box">
+                <div class="item">SQLite/MySQL/PostgreSQL</div>
+                <div class="item">内存向量库</div>
+                <div class="item">JSON 配置存储</div>
+                <div class="item">KECA 知识库</div>
+            </div>
+        </div>
+        
+        <!-- 核心控制流说明 -->
+        <div style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
+            <h4 style="margin-top: 0; font-size: 14px; color: #34495e;">核心控制流</h4>
+            <ol style="font-size: 12px; line-height: 1.5;">
+                <li>用户输入：通过 Streamlit 界面输入自然语言查询</li>
+                <li>预处理：查询预处理、Prompt 模板加载、上下文记忆检索</li>
+                <li>RAG 检索：调用 OpenVINO 优化的 bge-small-zh-v1.5 模型执行二阶段混合检索</li>
+                <li>SQL 生成：常规使用 DeepSeek-Chat，重试阶段按配置可切换至 DeepSeek-Reasoner</li>
+                <li>执行与优化：查询执行、性能遥测与状态展示、结果处理、Plotly 可视化</li>
+                <li>错误处理：执行失败时触发 Agent 错误感知重试机制</li>
+                <li>输出：返回结果、生成洞察、支持导出</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

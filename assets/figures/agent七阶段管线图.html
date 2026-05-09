@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent 七阶段管线图</title>
+    <style>
+        :root {
+            --bg-a: #f3f6fb;
+            --bg-b: #e9f0f8;
+            --panel: #ffffff;
+            --ink: #132033;
+            --muted: #536276;
+            --line: #d4deea;
+            --accent: #1f5f8b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px 12px;
+            color: var(--ink);
+            font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "Source Han Sans SC", "SimHei", sans-serif;
+            background:
+                radial-gradient(1000px 450px at 8% 0%, #ffffff 0%, transparent 62%),
+                radial-gradient(900px 400px at 100% 100%, #f6faff 0%, transparent 58%),
+                linear-gradient(155deg, var(--bg-a), var(--bg-b));
+        }
+
+        .figure-wrap {
+            width: min(1180px, 100%);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--panel);
+            box-shadow: 0 12px 32px rgba(28, 46, 70, 0.09);
+            overflow: hidden;
+        }
+
+        .figure-head {
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid #e8edf5;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            text-align: center;
+        }
+
+        .figure-head h1 {
+            margin: 0;
+            font-size: clamp(19px, 2.2vw, 24px);
+            line-height: 1.25;
+            letter-spacing: 0.3px;
+            color: #162130;
+            font-weight: 700;
+        }
+
+        .figure-head p {
+            margin: 6px 0 0;
+            font-size: 12.5px;
+            color: var(--muted);
+        }
+
+        .diagram-area {
+            padding: 16px 12px 18px;
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            min-width: 980px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 980px) {
+            body { padding: 14px 8px; }
+            .figure-wrap { border-radius: 12px; }
+            .figure-head { padding: 14px 12px 10px; }
+            .diagram-area { padding: 10px 8px 12px; }
+            .mermaid { min-width: 920px; }
+        }
+    </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            flowchart: {
+                curve: 'basis',
+                nodeSpacing: 54,
+                rankSpacing: 82,
+                padding: 18,
+                htmlLabels: false
+            },
+            themeVariables: {
+                fontFamily: 'Microsoft YaHei, PingFang SC, Noto Sans SC, Source Han Sans SC, SimHei, sans-serif',
+                fontSize: '20px',
+                fontweight: 'bold',
+                background: '#ffffff',
+                primaryColor: '#edf5ff',
+                primaryTextColor: '#1d2c3d',
+                primaryBorderColor: '#3d6d98',
+                secondaryColor: '#f4faf6',
+                tertiaryColor: '#fff8ea',
+                lineColor: '#48617d',
+                edgeLabelBackground: '#ffffff',
+                clusterBkg: '#f7fbff',
+                clusterBorder: '#97afc7'
+            }
+        });
+    </script>
+</head>
+<body>
+    <section class="figure-wrap">
+        <header class="figure-head">
+            <h1>图 3-2 Agent 七阶段处理管线图</h1>
+            <p>Figure 3-2 Seven-stage processing pipeline of the Text2SQL Agent</p>
+        </header>
+        <div class="diagram-area">
+            <div class="mermaid">
+flowchart LR
+    A([用户自然语言提问]) --> B{阶段 1: 意图识别}
+    B -- SQL 查询 --> C[阶段 2: RAG 检索]
+    B -- 闲聊 --> End([直接回复])
+    
+    C --> D[阶段 3: 智能表选择]
+    D -- 剪枝后 Schema -->
+     E[阶段 4: SQL 生成]
+    
+    subgraph Execution_Loop [执行与错误感知重试闭环]
+        E --> F[阶段 5: SQL 执行]
+        F -- 报错 --> G[阶段 6: 错误感知重试]
+        G -- 构造修复 Prompt --> E
+    end
+    
+    F -- 成功结果 --> H[阶段 7: 结果可视化]
+    H --> I([商业洞察展示])
+
+    classDef startEnd fill:#f5f9ff,stroke:#39658f,stroke-width:1.6px,color:#1b3550,font-weight:bold;
+    classDef decision fill:#fdf6e4,stroke:#b07515,stroke-width:1.6px,color:#6b3d00,font-weight:bold;
+    classDef rag fill:#eef8ff,stroke:#2f6c9e,stroke-width:1.5px,color:#143a5a;
+    classDef core fill:#f1f8f2,stroke:#2f7c50,stroke-width:1.5px,color:#184c32;
+    classDef loop fill:#fff5ec,stroke:#b96817,stroke-width:1.5px,color:#6c3b08;
+    classDef viz fill:#eef7f3,stroke:#2e7a69,stroke-width:1.5px,color:#1a4f44;
+
+    class A,End,I startEnd;
+    class B decision;
+    class C,D rag;
+    class E,F,G loop;
+    class H viz;
+
+    style Execution_Loop fill:#fffaf3,stroke:#d2a36a,stroke-width:1.4px
+
+    linkStyle 0 stroke:#4a6784,stroke-width:1.4px;
+    linkStyle 1 stroke:#2f6c9e,stroke-width:1.5px;
+    linkStyle 2 stroke:#7f8791,stroke-width:1.2px,stroke-dasharray:4 3;
+    linkStyle 3 stroke:#2f6c9e,stroke-width:1.5px;
+    linkStyle 4 stroke:#2f6c9e,stroke-width:1.5px;
+    linkStyle 5 stroke:#1f7446,stroke-width:1.5px;
+    linkStyle 6 stroke:#b85f16,stroke-width:1.6px;
+    linkStyle 7 stroke:#c06b17,stroke-width:1.5px,stroke-dasharray:4 2;
+    linkStyle 8 stroke:#1f7446,stroke-width:1.5px;
+    linkStyle 9 stroke:#2b6f8d,stroke-width:1.5px;
+            </div>
+        </div>
+    </section>
+</body>
+</html>
